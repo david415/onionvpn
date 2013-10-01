@@ -9,10 +9,9 @@ import binascii
 
 class HushWriter(object):
 
-     def __init__(self, address, packet):
+     def __init__(self, address):
          self.address = (address, 0)
          self.socket  = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)
-         #self.socket.bind(('lo', 0))
          self.socket.setsockopt(SOL_IP, IP_HDRINCL, 1)
          self.socket.setblocking(0)
          self.packets = []
@@ -23,7 +22,7 @@ class HushWriter(object):
          self.packets.append(packet)
 
      def fileno(self):
-         return self.socket
+         return self.socket.fileno()
 
      def connectionLost(self, reason):
          reactor.removeWriter(self)
@@ -50,10 +49,10 @@ def main():
 
     packet = str(ip/tcp)
 
-    hush = HushWriter('127.0.0.1', packet)
+    hush = HushWriter('127.0.0.1')
     
     for x in range(3):
-        hush.addPacket(ip/tcp)
+        hush.addPacket(packet)
 
     print "before reactor run"
     reactor.run()
