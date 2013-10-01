@@ -1,19 +1,21 @@
 #!/usr/bin/env python
 
-from nflog_cffi import NFLOG
+from nflog_cffi import NFLOG, NFWouldBlock
 from twisted.internet import main
 from twisted.internet import reactor
 
 
 class NFLOGReader(object):
 
-    def __init__(self, dropPrivCallback = None, handlePacket = None):
+    def __init__(self, dropPrivCallback = None, handlePacket = None, queues = (0,1), nflog_kwargs=dict()):
         """Setup the NFLOG generator. """
-        nflog_kwargs      = dict()
-        queues            = 0, 1
+
+        self.nflog_kwargs = nflog_kwargs
+        self.queues       = queues
         self.handlePacket = handlePacket
-        self.nflog        = NFLOG().generator(queues, **nflog_kwargs)
-        self.fd           = self.nflog.next()
+        self.nflog        = NFLOG().generator(self.queues, **self.nflog_kwargs)
+        self.fd           = self.nflog.send(None)
+       
 
         if dropPrivCallback is not None:
             dropPrivCallback()
@@ -28,6 +30,12 @@ class NFLOGReader(object):
 
     def doRead(self):
         self.handlePacket(self.nflog.next())
+        # BUG: broken
+#        while True:
+#            pkt = self.nflog.send(True)
+#            if pkt is NFWouldBlock:
+#                break
+#            self.handlePacket(pkt)
 
     def logPrefix(self):
         return 'nflog'
