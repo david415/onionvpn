@@ -14,8 +14,7 @@ class NFLOGReader(object):
         self.queues       = queues
         self.handlePacket = handlePacket
         self.nflog        = NFLOG().generator(self.queues, **self.nflog_kwargs)
-        self.fd           = self.nflog.send(None)
-       
+        self.fd           = self.nflog.next()
 
         if dropPrivCallback is not None:
             dropPrivCallback()
@@ -29,13 +28,11 @@ class NFLOGReader(object):
         reactor.removeReader(self)
 
     def doRead(self):
-        self.handlePacket(self.nflog.next())
-        # BUG: broken
-#        while True:
-#            pkt = self.nflog.send(True)
-#            if pkt is NFWouldBlock:
-#                break
-#            self.handlePacket(pkt)
+        pkt = self.nflog.next()
+        while True:
+            self.handlePacket(pkt)
+            pkt = self.nflog.send(True)
+            if pkt is NFWouldBlock: break
 
     def logPrefix(self):
         return 'nflog'
