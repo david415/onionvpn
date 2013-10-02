@@ -8,7 +8,7 @@ from twisted.internet import reactor
 from tunConfig import tunDevice
 
 
-class tunWriter(object):
+class TUNWriter(object):
 
     def __init__(self, tun):
         self.tun     = tun
@@ -33,7 +33,7 @@ class tunWriter(object):
             return
 
     def logPrefix(self):
-        return 'tunWriter'
+        return 'TUNWriter'
 
 
 
@@ -58,7 +58,7 @@ def main():
                       netmask   = '255.255.255.0',
                       mtu       = 1500)
 
-    tunwriter = tunWriter(mytun.tun, handlePacket=printPacketLen)
+    tunwriter = TUNWriter(mytun.tun, handlePacket=printPacketLen)
 
 
     tunwriter.addPacket(packet)

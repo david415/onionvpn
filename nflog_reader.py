@@ -5,7 +5,7 @@ from twisted.internet import main
 from twisted.internet import reactor
 
 
-class NFLOGReader(object):
+class NFLogReader(object):
 
     def __init__(self, dropPrivCallback = None, handlePacket = None, queues = (0,1), nflog_kwargs=dict()):
         """Setup the NFLOG generator. """
@@ -43,7 +43,7 @@ def main():
     def printPacketLen(p):
         print len(p)
 
-    nflog = NFLOGReader(handlePacket=printPacketLen)
+    nflog = NFLogReader(handlePacket=printPacketLen)
 
     reactor.run()
 

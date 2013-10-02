@@ -9,7 +9,7 @@ import os
 from tunConfig import tunDevice
 
 
-class tunReader(object):
+class TUNReader(object):
 
     def __init__(self, tun, handlePacket):
         self.tun          = tun
@@ -29,7 +29,7 @@ class tunReader(object):
         self.handlePacket(packet)
 
     def logPrefix(self):
-        return 'tunReader'
+        return 'TUNReader'
 
 def main():
 
@@ -42,7 +42,7 @@ def main():
                     netmask   = '255.255.255.0',
                     mtu       = 1500)
 
-    tunReader(mytun.tun, handlePacket=printPacketLen)
+    TUNReader(mytun.tun, handlePacket=printPacketLen)
 
     reactor.run()
 
