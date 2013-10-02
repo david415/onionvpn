@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 
+# External modules
+from twisted.internet import reactor
+import os
+
+# Internal modules
 from hush_writer import HushWriter
 from tun_reader import TUNReader
 from tun_writer import TUNWriter
 from tunConfig import tunDevice
 from nflog_reader import NFLogReader
+
 
 
 def main():

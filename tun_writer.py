@@ -3,6 +3,7 @@
 # External modules
 from twisted.internet import main
 from twisted.internet import reactor
+import os
 
 # Internal modules
 from tunConfig import tunDevice
@@ -13,24 +14,27 @@ class TUNWriter(object):
     def __init__(self, tun):
         self.tun     = tun
         self.packets = []
+        self.fd      = os.dup(tun.fileno())
         reactor.addWriter(self)
 
     def connectionLost(self, reason):
         # BUG: we should remove the tun device
         # unless someone is still using it...
-        reactor.removeReader(self)
+        reactor.removeWriter(self)
 
     def fileno(self):
-        return self.tun
+        return self.fd
 
     def addPacket(self, packet):
+        if len(self.packets) == 0:
+            reactor.addWriter(self)
         self.packets.append(packet)
 
     def doWrite(self):
         if len(self.packets) > 0:
             self.tun.write(self.packets.pop(0))
         else:
-            return
+            reactor.removeWriter(self)
 
     def logPrefix(self):
         return 'TUNWriter'

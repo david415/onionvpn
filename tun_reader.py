@@ -14,6 +14,7 @@ class TUNReader(object):
     def __init__(self, tun, handlePacket):
         self.tun          = tun
         self.handlePacket = handlePacket
+        self.fd           = os.dup(tun.fileno())
         reactor.addReader(self)
 
     def connectionLost(self, reason):
@@ -22,10 +23,10 @@ class TUNReader(object):
         reactor.removeReader(self)
 
     def fileno(self):
-        return self.tun.fileno()
+        return self.fd
 
     def doRead(self):
-        packet = os.read(self.tun.fileno(), self.tun.mtu)
+        packet = self.tun.read(self.tun.mtu)
         self.handlePacket(packet)
 
     def logPrefix(self):
@@ -42,7 +43,7 @@ def main():
                     netmask   = '255.255.255.0',
                     mtu       = 1500)
 
-    TUNReader(mytun.tun, handlePacket=printPacketLen)
+    TUNReader(mytun, handlePacket=printPacketLen)
 
     reactor.run()
 
