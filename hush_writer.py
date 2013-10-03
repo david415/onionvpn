@@ -4,19 +4,17 @@ from twisted.internet import main
 from twisted.internet import reactor
 from socket import socket, AF_INET, SOCK_RAW, gethostbyname, gethostname, IPPROTO_RAW, SOL_IP, IP_HDRINCL
 
-from scapy.all import TCP, IP
+from scapy.all import TCP, IP, hexdump
 import binascii
 
 class HushWriter(object):
 
-     def __init__(self, address):
-          self.address = (address, 0)
+     def __init__(self, dest_ip):
+          self.dest_ip = (dest_ip, 0)
           self.socket  = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)
           self.socket.setsockopt(SOL_IP, IP_HDRINCL, 1)
           self.socket.setblocking(0)
           self.packets = []
-
-          reactor.addWriter(self)
 
      def addPacket(self, packet):
           if len(self.packets) == 0:
@@ -31,8 +29,9 @@ class HushWriter(object):
 
      def doWrite(self):
           if len(self.packets) > 0:
-               self.socket.sendto(self.packets.pop(0), self.address)
-          else:
+               print "writing"
+               self.socket.sendto(self.packets.pop(0), self.dest_ip)
+          if len(self.packets) == 0:
                reactor.removeWriter(self)
 
      def logPrefix(self):
@@ -41,8 +40,8 @@ class HushWriter(object):
 
 
 def main():
-    ip  = IP(dst="127.0.0.1")
-    tcp = TCP(dport   = 2600, 
+    ip  = IP(dst="10.1.1.1")
+    tcp = TCP(dport   = 688, 
               flags   = 'S',
               seq     = 32456,
               ack     = 32456,
@@ -50,8 +49,10 @@ def main():
               options = [('MSS',binascii.unhexlify("DEADBEEFCAFE"))])
 
     packet = str(ip/tcp)
-
-    hush = HushWriter('127.0.0.1')
+    hexdump(packet)
+    print "pkt len %s" % len(packet)
+    
+    hush = HushWriter('10.1.1.1')
     
     for x in range(3):
         hush.addPacket(packet)

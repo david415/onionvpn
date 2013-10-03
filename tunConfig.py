@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from pytun import TunTapDevice
+import pytun
 
 TUNSETIFF = 0x400454ca
 TUNSETOWNER = TUNSETIFF + 2
@@ -9,7 +9,7 @@ TUNSETOWNER = TUNSETIFF + 2
 class tunDevice():
 
     def __init__(self, remote_ip = None, local_ip = None, netmask = None, mtu = None, user_id = None, dropPrivCallback = None):
-        self.tun         = TunTapDevice()
+        self.tun         = pytun.TunTapDevice(flags=pytun.IFF_TUN|pytun.IFF_NO_PI)
         self.tun.addr    = local_ip
         self.tun.dstaddr = remote_ip
         self.tun.netmask = netmask
@@ -19,3 +19,6 @@ class tunDevice():
             fcntl.ioctl(tun, TUNSETOWNER, userid)
             if dropPrivCallback is not None:
                 dropPrivCallback()
+
+    def up(self):
+        self.tun.up()

@@ -15,18 +15,19 @@ from nflog_reader import NFLogReader
 
 def main():
 
+    mtu = 1500
     mytun = tunDevice(remote_ip = '10.1.1.1',
                       local_ip  = '10.1.1.2',
                       netmask   = '255.255.255.0',
-                      mtu       = 1500)
+                      mtu       = mtu)
 
-
+    mytun.up()
     # read packets from tun device and write it to HushWriter
-    hushWriter  = HushWriter('127.0.0.1')
-    tunReader   = TUNReader(mytun.tun, handlePacket=hushWriter.addPacket)
+    hushWriter  = HushWriter('10.1.1.1')
+    tunReader   = TUNReader(mytun, mtu=mtu, handlePacket=hushWriter.addPacket)
 
     # receive packets from nflogReader and send to tunWriter
-    tunWriter   = TUNWriter(mytun.tun)
+    tunWriter   = TUNWriter(mytun)
     nflogReader = NFLogReader(handlePacket=tunWriter.addPacket)
 
 

@@ -4,6 +4,7 @@ from nflog_cffi import NFLOG, NFWouldBlock
 from twisted.internet import main
 from twisted.internet import reactor
 
+from scapy.all import IP, hexdump
 
 class NFLogReader(object):
 
@@ -41,7 +42,9 @@ class NFLogReader(object):
 def main():
     
     def printPacketLen(p):
-        print len(p)
+        print "packet len %s" % len(p)
+        print repr(IP(p))
+        hexdump(p)
 
     nflog = NFLogReader(handlePacket=printPacketLen)
 

@@ -14,8 +14,8 @@ class TUNWriter(object):
     def __init__(self, tun):
         self.tun     = tun
         self.packets = []
-        self.fd      = os.dup(tun.fileno())
-        reactor.addWriter(self)
+        self.fd      = os.dup(tun.tun.fileno())
+
 
     def connectionLost(self, reason):
         # BUG: we should remove the tun device
@@ -32,8 +32,8 @@ class TUNWriter(object):
 
     def doWrite(self):
         if len(self.packets) > 0:
-            self.tun.write(self.packets.pop(0))
-        else:
+            self.tun.tun.write(self.packets.pop(0))
+        if len(self.packets) == 0:
             reactor.removeWriter(self)
 
     def logPrefix(self):
@@ -43,7 +43,7 @@ class TUNWriter(object):
 
 def main():
 
-    ip  = IP(dst="127.0.0.1")
+    ip  = IP(dst="10.1.1.1")
     tcp = TCP(dport   = 2600, 
               flags   = 'S',
               seq     = 32456,
@@ -62,11 +62,9 @@ def main():
                       netmask   = '255.255.255.0',
                       mtu       = 1500)
 
-    tunwriter = TUNWriter(mytun.tun, handlePacket=printPacketLen)
-
-
+    tunwriter = TUNWriter(mytun.tun)
     tunwriter.addPacket(packet)
-
+    reactor.addWriter(tunwriter)
     reactor.run()
 
 if __name__ == '__main__':
