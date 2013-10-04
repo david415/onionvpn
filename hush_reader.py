@@ -59,7 +59,7 @@ class HushPacketProducer(object):
 
     def write(self, packet):
         # BUG: this line fucks shit up for some reason!?
-        #packet = self.decodeHushPacket(packet)
+        packet = self.decodeHushPacket(packet)
         self.consumer.write(packet)
 
     def decodeHushPacket(self, packet):

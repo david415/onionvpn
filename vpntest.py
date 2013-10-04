@@ -20,12 +20,21 @@ from hush_reader import HushPacketProducer
 
 def main():
 
+    dest_ip      = '127.0.0.1'
+    dest_port    = 6900
+
     tunFactory   = TUNFactory(remote_ip = '10.1.1.5',
                               local_ip  = '10.1.1.6',
                               netmask   = '255.255.255.0',
                               mtu       = 1500)
+    tunDevice     = tunFactory.buildTUN()
 
-    tunDevice    = tunFactory.buildTUN()
+    hush_consume  = HushPacketConsumer(dest_ip, dest_port)
+    tun_reader_factory = TUNReaderFactory(tunDevice) 
+    spliced_packet_relay = SplicedPacketProducer(
+          consumer               = hush_consumer,
+          input_producer_factory = tun_reader_factory,
+          mtu                    = 50)
 
 
     tun_consumer = TUNPacketConsumer(tunDevice)
