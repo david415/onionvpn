@@ -19,5 +19,8 @@ class TUNFactory():
         self.tunDevice.netmask = self.netmask
         self.tunDevice.mtu     = self.mtu
 
+        # TODO: drop priveleges after bring up interface
+        self.tunDevice.up()
+
         return self.tunDevice
 

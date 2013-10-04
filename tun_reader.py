@@ -29,8 +29,6 @@ class TUNPacketProducer(object):
         self.consumer     = consumer
         self.start_reading()
 
-        # BUG: drop privs after bring up interface
-        self.tunDevice.up()
 
     def start_reading(self):
         """Register with the Twisted reactor."""

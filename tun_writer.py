@@ -4,7 +4,7 @@
 from twisted.internet import main, interfaces, reactor
 from zope.interface import implements
 import os
-from scapy.all import IP, TCP
+from scapy.all import IP, TCP, hexdump
 import binascii
 
 # Internal modules

@@ -58,7 +58,9 @@ class HushPacketProducer(object):
         self.producer.stop_reading()
 
     def write(self, packet):
-        self.consumer.write(self.decodeHushPacket(packet))
+        # BUG: this line fucks shit up for some reason!?
+        #packet = self.decodeHushPacket(packet)
+        self.consumer.write(packet)
 
     def decodeHushPacket(self, packet):
         ip_packet = IP(packet)
