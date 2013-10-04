@@ -23,7 +23,7 @@ class HushPacketMTUException(Exception):
 class HushPacketConsumer(object):
 
      implements(interfaces.IConsumer)
-     mtu = 50
+     mtu = 600
 
      def __init__(self, dest_ip, dest_port):
           self.dest_ip          = dest_ip
@@ -47,24 +47,12 @@ class HushPacketConsumer(object):
           self.ip_packet_writer.write(self.encodeHushPacket(packet))
 
      def encodeHushPacket(self, packet):
-
           if len(packet) > HushPacketConsumer.mtu:
                raise HushPacketMTUException
-
-          id, seq, ack, window = struct.unpack_from('!HIIH', packet[:12])
-          tcp_extended_header = packet[12:]
-
-          ip  = IP(dst=self.dest_ip, id=id)
-          tcp = TCP(dport   = self.dest_port, 
-                    flags   = 'S',
-                    seq     = seq,
-                    ack     = ack,
-                    window  = window,
-                    options = [('MSS',tcp_extended_header)])
-
-          encoded_packet = str(ip/tcp)
+          ip  = IP(dst    = self.dest_ip)
+          tcp = TCP(dport = self.dest_port)
+          encoded_packet = str(ip/tcp/packet)
           return encoded_packet
-
 
 
 def main():

@@ -44,7 +44,6 @@ class HushPacketProducer(object):
     def start_reading(self):
         self.nflogProducer.start_reading()
 
- 
     # IConsumer section
     def registerProducer(self, producer, streaming):
         assert self.producer is None
@@ -63,20 +62,7 @@ class HushPacketProducer(object):
         self.consumer.write(packet)
 
     def decodeHushPacket(self, packet):
-        ip_packet = IP(packet)
-        tcp_packet = ip_packet[TCP]
-        tcp_options = dict(tcp_packet.options)
-        if tcp_options.has_key('MSS'):
-            tcp_extended_header = tcp_options['MSS']
-        else:
-            raise HushPacketParseException
-
-        decoded_packet = struct.pack('!HIIH', 
-                                     ip_packet.id,
-                                     tcp_packet.seq,
-                                     tcp_packet.ack,
-                                     tcp_packet.window) + str(tcp_extended_header)
-        return decoded_packet
+        return packet[TCP].payload
 
 def main():
     consumer = NFLOG_TestConsumer()

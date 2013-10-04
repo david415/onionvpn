@@ -36,7 +36,6 @@ class TUNPacketProducer(object):
 
         consumer.registerProducer(self, streaming=True)
         self.consumer     = consumer
-        self.start_reading()
 
 
     def start_reading(self):
