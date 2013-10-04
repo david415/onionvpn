@@ -14,6 +14,15 @@ import binascii
 from tun_factory import TUNFactory
 
 
+class TUNReaderFactory(object):
+
+    def __init__(self, tunDevice):
+        self.tunDevice = tunDevice
+
+    def buildProducer(self, consumer):
+        return TUNPacketProducer(self.tunDevice, consumer)
+
+
 class TUNPacketProducer(object):
 
     implements(interfaces.IPushProducer, interfaces.IReadDescriptor)

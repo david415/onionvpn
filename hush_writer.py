@@ -10,9 +10,10 @@ import struct
 
 # Internal modules
 from tun_factory import TUNFactory
-from tun_reader import TUNPacketProducer, TUN_TestConsumer
+from tun_reader import TUNPacketProducer, TUNReaderFactory, TUN_TestConsumer
 from tun_writer import TUN_TestProducer
 from ip_packet_writer import IPPacketWriter
+from packet_splicer import SplicedPacketProducer
 
 
 class HushPacketMTUException(Exception):
@@ -24,8 +25,9 @@ class HushPacketConsumer(object):
      implements(interfaces.IConsumer)
      mtu = 50
 
-     def __init__(self, dest_ip):
+     def __init__(self, dest_ip, dest_port):
           self.dest_ip          = dest_ip
+          self.dest_port        = dest_port
           self.ip_packet_writer = IPPacketWriter(dest_ip)
           self.producer         = None
 
@@ -52,42 +54,37 @@ class HushPacketConsumer(object):
           id, seq, ack, window = struct.unpack_from('!HIIH', packet[:12])
           tcp_extended_header = packet[12:]
 
-          ip  = IP(dst=self.ip_dest, id=id)
-          tcp = TCP(dport   = port_dest, 
+          ip  = IP(dst=self.dest_ip, id=id)
+          tcp = TCP(dport   = self.dest_port, 
                     flags   = 'S',
                     seq     = seq,
                     ack     = ack,
                     window  = window,
                     options = [('MSS',tcp_extended_header)])
 
-          encoded_packet = ip/tcp
+          encoded_packet = str(ip/tcp)
           return encoded_packet
 
 
 
 def main():
-     dest_ip = '127.0.0.1'
-     ip  = IP(dst=dest_ip)
-     tcp = TCP(dport   = 688, 
-               flags   = 'S',
-               seq     = 32456,
-               ack     = 32456,
-               window  = 32456,
-               options = [('MSS',binascii.unhexlify("DEADBEEFCAFE"))])
-
-     packet = str(ip/tcp)
-     hexdump(packet)
-     print "pkt len %s" % len(packet)
+     dest_ip      = '127.0.0.1'
+     dest_port    = 6900
 
      tunFactory   = TUNFactory(remote_ip = '10.1.1.1',
                                local_ip  = '10.1.1.2',
                                netmask   = '255.255.255.0',
                                mtu       = 1500)
 
-     tunDevice    = tunFactory.buildTUN()
+     tunDevice          = tunFactory.buildTUN()
+     hush_consumer      = HushPacketConsumer(dest_ip, dest_port)
+     tun_reader_factory = TUNReaderFactory(tunDevice)
+     
+     spliced_packet_relay = SplicedPacketProducer(
+          consumer               = hush_consumer,
+          input_producer_factory = tun_reader_factory,
+          mtu                    = 50)
 
-     hush_consumer = HushPacketConsumer(dest_ip)
-     tun_reader   = TUNPacketProducer(tunDevice, hush_consumer)
 
      reactor.run()
 
