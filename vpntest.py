@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # External modules
+from twisted.application import service, internet
 from twisted.internet import main, interfaces, reactor
 from zope.interface import implements
 from socket import socket, AF_INET, SOCK_RAW, gethostbyname, gethostname, IPPROTO_RAW, SOL_IP, IP_HDRINCL
@@ -21,7 +22,6 @@ from hush_writer import HushPacketConsumer
 
 
 def main():
-
     dest_ip       = '127.0.0.1'
     dest_port     = 6900
 
@@ -40,6 +40,9 @@ def main():
     reactor.addWriter(tun_consumer) 
     reactor.addReader(tun_producer) 
     reactor.run()
- 
-if __name__ == "__main__":
+    
+
+
+if __name__ == '__main__':
     main()
+

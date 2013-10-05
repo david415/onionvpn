@@ -49,9 +49,9 @@ class HushPacketConsumer(object):
      def encodeHushPacket(self, packet):
           if len(packet) > HushPacketConsumer.mtu:
                raise HushPacketMTUException
-          ip  = IP(dst    = self.dest_ip)
-          tcp = TCP(dport = self.dest_port)
-          encoded_packet = str(ip/tcp/packet)
+          ip   = IP(dst  = self.dest_ip)
+          icmp = ICMP(type=0)
+          encoded_packet = str(ip/icmp/packet)
           return encoded_packet
 
 

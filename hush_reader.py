@@ -62,7 +62,7 @@ class HushPacketProducer(object):
         self.consumer.write(packet)
 
     def decodeHushPacket(self, packet):
-        return packet[TCP].payload
+        return packet[ICMP].payload
 
 def main():
     consumer = NFLOG_TestConsumer()
