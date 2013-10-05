@@ -22,6 +22,8 @@ class TUNPacketConsumer(object):
         self.packets       = []
         self.producer      = None
 
+        reactor.addWriter(self)
+
     def registerProducer(self, producer, streaming):
         assert self.producer is None
         assert streaming is True

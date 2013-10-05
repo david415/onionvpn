@@ -1,4 +1,5 @@
 *.py[cod]
+twistd.pid
 
 # C extensions
 *.so

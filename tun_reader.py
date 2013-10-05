@@ -37,6 +37,7 @@ class TUNPacketProducer(object):
         consumer.registerProducer(self, streaming=True)
         self.consumer     = consumer
 
+        reactor.addReader(self)
 
     def start_reading(self):
         """Register with the Twisted reactor."""

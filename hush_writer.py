@@ -4,7 +4,7 @@
 from twisted.internet import main, interfaces, reactor
 from zope.interface import implements
 from socket import socket, AF_INET, SOCK_RAW, gethostbyname, gethostname, IPPROTO_RAW, SOL_IP, IP_HDRINCL
-from scapy.all import TCP, IP, hexdump
+from scapy.all import TCP, IP, ICMP, hexdump
 import binascii
 import struct
 
@@ -25,9 +25,8 @@ class HushPacketConsumer(object):
      implements(interfaces.IConsumer)
      mtu = 600
 
-     def __init__(self, dest_ip, dest_port):
+     def __init__(self, dest_ip):
           self.dest_ip          = dest_ip
-          self.dest_port        = dest_port
           self.ip_packet_writer = IPPacketWriter(dest_ip)
           self.producer         = None
 
@@ -57,7 +56,6 @@ class HushPacketConsumer(object):
 
 def main():
      dest_ip      = '127.0.0.1'
-     dest_port    = 6900
 
      tunFactory   = TUNFactory(remote_ip = '10.1.1.1',
                                local_ip  = '10.1.1.2',
@@ -65,7 +63,7 @@ def main():
                                mtu       = 1500)
 
      tunDevice          = tunFactory.buildTUN()
-     hush_consumer      = HushPacketConsumer(dest_ip, dest_port)
+     hush_consumer      = HushPacketConsumer(dest_ip)
      tun_reader_factory = TUNReaderFactory(tunDevice)
      
      spliced_packet_relay = SplicedPacketProducer(

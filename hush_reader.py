@@ -4,7 +4,7 @@
 from twisted.internet import main, interfaces, reactor
 from zope.interface import implements
 from socket import socket, AF_INET, SOCK_RAW, gethostbyname, gethostname, IPPROTO_RAW, SOL_IP, IP_HDRINCL
-from scapy.all import TCP, IP, hexdump
+from scapy.all import TCP, IP, ICMP, hexdump
 import binascii
 import struct
 
@@ -62,7 +62,7 @@ class HushPacketProducer(object):
         self.consumer.write(packet)
 
     def decodeHushPacket(self, packet):
-        return packet[ICMP].payload
+        return str(IP(packet)[ICMP].payload)
 
 def main():
     consumer = NFLOG_TestConsumer()
