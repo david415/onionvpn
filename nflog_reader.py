@@ -3,6 +3,8 @@
 from nflog_cffi import NFLOG, NFWouldBlock
 from twisted.internet import main, interfaces, reactor
 from zope.interface import implements
+from scapy.all import IP
+import os
 
 
 class NFLogPacketProducer(object):
@@ -48,7 +50,7 @@ class NFLogPacketProducer(object):
 
         # BUG: must close the netlink_filter socket?
         # Does this work?
-        # self.fd.close()
+        os.close(self.fd)
         return reason
 
     def doRead(self):
@@ -82,7 +84,8 @@ class NFLOG_TestConsumer(object):
         self.producer.stop_reading()
 
     def write(self, packet):
-        print "packet len %s" % len(packet)
+        print IP(packet).summary()
+#        print "packet len %s" % len(packet)
 
 
 # Steps to perform test:
