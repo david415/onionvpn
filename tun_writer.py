@@ -6,15 +6,16 @@ from zope.interface import implements
 import os
 from scapy.all import IP, TCP, hexdump
 import binascii
+from zope.interface import implementer
 
 # Internal modules
 from tun_factory import TUNFactory
 from tun_reader import TUNPacketProducer, TUN_TestConsumer
 
 
+@implementer(interfaces.IConsumer, interfaces.IWriteDescriptor)
 class TUNPacketConsumer(object):
 
-    implements(interfaces.IConsumer, interfaces.IWriteDescriptor)
 
     def __init__(self, tunDevice):
         self.tunDevice     = tunDevice
@@ -25,17 +26,16 @@ class TUNPacketConsumer(object):
         reactor.addWriter(self)
 
     def registerProducer(self, producer, streaming):
-        assert self.producer is None
         assert streaming is True
 
         self.producer = producer
         self.producer.start_reading()
 
     def unregisterProducer(self):
-        assert self.producer is not None
         self.producer.stop_reading()
 
     def write(self, packet):
+        print "write: packet len %s" % len(packet)
         if len(self.packets) == 0:
             reactor.addWriter(self)
         self.packets.append(packet)
@@ -49,13 +49,14 @@ class TUNPacketConsumer(object):
         return self.fd
 
     def doWrite(self):
+        print "doWrite"
         if len(self.packets) > 0:
             self.tunDevice.write(self.packets.pop(0))
         if len(self.packets) == 0:
             reactor.removeWriter(self)
 
     def logPrefix(self):
-        return 'TUNWriter'
+        return 'TUNPacketConsumer'
 
 
 

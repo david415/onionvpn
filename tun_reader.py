@@ -4,7 +4,7 @@
 from twisted.internet import main
 from twisted.internet import reactor
 from twisted.internet import main, interfaces, reactor
-from zope.interface import implements
+from zope.interface import implementer
 import os
 from scapy.all import IP, TCP, hexdump
 import struct
@@ -14,22 +14,23 @@ import binascii
 from tun_factory import TUNFactory
 
 
-class TUNReaderFactory(object):
+class TUN_Producer_Factory(object):
 
     def __init__(self, tunDevice):
         self.tunDevice = tunDevice
 
-    def buildProducer(self, consumer):
+    def buildProducer(self, consumer=None):
         return TUNPacketProducer(self.tunDevice, consumer)
 
 
+
+@implementer(interfaces.IReadDescriptor, interfaces.IPushProducer)
 class TUNPacketProducer(object):
 
-    implements(interfaces.IPushProducer, interfaces.IReadDescriptor)
 
     def __init__(self, tunDevice, consumer=None):
         super(TUNPacketProducer, self).__init__()
-                
+
         self.tunDevice    = tunDevice
         self.mtu          = tunDevice.mtu
         self.fd           = os.dup(tunDevice.fileno())
@@ -69,18 +70,18 @@ class TUNPacketProducer(object):
 
     def doRead(self):
         packet = self.tunDevice.read(self.tunDevice.mtu)
+        print "doRead: packet len %s" % len(packet)
         self.consumer.write(packet)
 
     def logPrefix(self):
-        return 'TUNReader'
+        return 'TUNPacketProducer'
 
 
 
 
-
+@implementer(interfaces.IConsumer)
 class TUN_TestConsumer(object):
 
-    implements(interfaces.IConsumer)
 
     def __init__(self):
         self.producer = None
