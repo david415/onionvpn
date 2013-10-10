@@ -14,10 +14,6 @@ from udp_consumer_producer import UDP_ConsumerProxy, UDP_ProducerProxy
 from tun_reader import TUN_Producer_Factory
 
 
-# iptables -A INPUT -p icmp -j NFLOG
-# iptables -A INPUT -p icmp -j DROP
-
-
 
 class HushVPNService(service.Service):
 
@@ -28,6 +24,7 @@ class HushVPNService(service.Service):
                  tun_mtu         = None,
                  udp_remote_ip   = None,
                  udp_remote_port = None,
+                 udp_local_ip    = None,
                  udp_local_port  = None):
 
         self.tun_local_ip    = tun_local_ip
@@ -36,7 +33,9 @@ class HushVPNService(service.Service):
         self.tun_mtu         = tun_mtu
         self.udp_remote_ip   = udp_remote_ip
         self.udp_remote_port = udp_remote_port
+        self.udp_local_ip    = udp_local_ip
         self.udp_local_port  = udp_local_port
+        self.noisey = True
 
     def startService(self):
 
@@ -50,18 +49,23 @@ class HushVPNService(service.Service):
         # TODO: drop priveleges after bringing up interface
         self.tunDevice.up()
 
-
         # UDP <-> TUN
-
         tun_consumer           = TUNPacketConsumer(self.tunDevice)
-        udp_ProducerProxy      = UDP_ProducerProxy(consumer = tun_consumer)
 
+        udp_ProducerProxy      = UDP_ProducerProxy(consumer = tun_consumer,
+                                                   host     = self.udp_local_ip,
+                                                   port     = self.udp_local_port)
 
-        udp_ConsumerProxy      = UDP_ConsumerProxy(self.udp_remote_ip, self.udp_remote_port)
+        udp_ConsumerProxy      = UDP_ConsumerProxy(host = self.udp_remote_ip,
+                                                   port = self.udp_remote_port)
+
         tun_producer           = TUNPacketProducer(self.tunDevice, consumer = udp_ConsumerProxy)
 
 
-        reactor.listenUDP(self.udp_local_port, udp_ConsumerProxy)
+        reactor.addReader(tun_producer)
+        reactor.addWriter(tun_consumer)
+        reactor.addReader(udp_ProducerProxy)
+        reactor.addWriter(udp_ConsumerProxy)
 
 
     def stopService(self):

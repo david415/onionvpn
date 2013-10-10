@@ -7,6 +7,7 @@ import os
 from scapy.all import IP, TCP, hexdump
 import binascii
 from zope.interface import implementer
+from twisted.python import log
 
 # Internal modules
 from tun_factory import TUNFactory
@@ -23,24 +24,27 @@ class TUNPacketConsumer(object):
         self.packets       = []
         self.producer      = None
 
-        reactor.addWriter(self)
 
     def registerProducer(self, producer, streaming):
+        log.msg("registerProducer")
         assert streaming is True
 
         self.producer = producer
         self.producer.start_reading()
 
     def unregisterProducer(self):
+        log.msg("unregisterProducer")
         self.producer.stop_reading()
 
     def write(self, packet):
-        print "write: packet len %s" % len(packet)
+        log.msg("write: packet len %s" % len(packet))
         if len(self.packets) == 0:
+            log.msg("addWriter")
             reactor.addWriter(self)
         self.packets.append(packet)
 
     def connectionLost(self, reason):
+        log.msg("connectionLost")
         # BUG: we should remove the tun device
         # unless someone is still using it...
         reactor.removeWriter(self)
@@ -49,16 +53,22 @@ class TUNPacketConsumer(object):
         return self.fd
 
     def doWrite(self):
-        print "doWrite"
+        log.msg("doWrite")
+
         if len(self.packets) > 0:
+            log.msg("doWrite: calling tunDevice.write")
             self.tunDevice.write(self.packets.pop(0))
         if len(self.packets) == 0:
+            log.msg("doWrite: calling reactor.removeWriter(self)")
             reactor.removeWriter(self)
 
     def logPrefix(self):
         return 'TUNPacketConsumer'
 
 
+
+# Note: this code below here is for testing... but it is all obsolete
+# because i didn't maintain it
 
 class TUN_TestProducer(object):
 

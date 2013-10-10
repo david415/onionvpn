@@ -29,36 +29,40 @@ class TUNPacketProducer(object):
 
 
     def __init__(self, tunDevice, consumer=None):
-        super(TUNPacketProducer, self).__init__()
-
         self.tunDevice    = tunDevice
         self.mtu          = tunDevice.mtu
         self.fd           = os.dup(tunDevice.fileno())
 
+        print "__init__: calling consumer.registerProducer"
         consumer.registerProducer(self, streaming=True)
         self.consumer     = consumer
 
-        reactor.addReader(self)
 
     def start_reading(self):
         """Register with the Twisted reactor."""
+        print "start_reading"
         reactor.addReader(self)
 
     def stop_reading(self):
         """Unregister with the Twisted reactor."""
+        print "stop_reading"
         reactor.removeReader(self)
 
     def pauseProducing(self):
+        print "pauseProducing"
         reactor.removeReader(self)
 
     def resumeProducing(self):
+        print "resumeProducing"
         self.start_reading()
 
     def stopProducing(self):
+        print "stopProducing"
         connDone = failure.Failure(main.CONNECTION_DONE)
         self.connectionLost(connDone)
 
     def connectionLost(self, reason):
+        print "connectionLost"
         self.stop_reading()
         self.consumer.unregisterProducer()
         self.tunDevice.close()
@@ -71,13 +75,15 @@ class TUNPacketProducer(object):
     def doRead(self):
         packet = self.tunDevice.read(self.tunDevice.mtu)
         print "doRead: packet len %s" % len(packet)
+        print "doRead: calling consumer.write"
         self.consumer.write(packet)
 
     def logPrefix(self):
         return 'TUNPacketProducer'
 
 
-
+# Note: this code below here is for testing... but it is all obsolete
+# because i didn't maintain it
 
 @implementer(interfaces.IConsumer)
 class TUN_TestConsumer(object):
