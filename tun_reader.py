@@ -4,7 +4,7 @@
 from twisted.internet import main
 from twisted.internet import reactor
 from twisted.internet import main, interfaces, reactor
-from twisted.python import log
+from twisted.python import log, failure
 from zope.interface import implementer
 import os
 from scapy.all import IP, TCP, hexdump
@@ -58,8 +58,8 @@ class TUNPacketProducer(object):
 
     def stopProducing(self):
         log.msg("stopProducing")
-        connDone = failure.Failure(main.CONNECTION_DONE)
-        self.connectionLost(connDone)
+        #connDone = failure.Failure(main.CONNECTION_DONE)
+        #self.connectionLost(connDone)
 
     def connectionLost(self, reason):
         log.msg("connectionLost")

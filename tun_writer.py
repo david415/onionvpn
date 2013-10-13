@@ -30,11 +30,11 @@ class TUNPacketConsumer(object):
         assert streaming is True
 
         self.producer = producer
-        self.producer.start_reading()
+        self.producer.resumeProducing()
 
     def unregisterProducer(self):
         log.msg("unregisterProducer")
-        self.producer.stop_reading()
+        self.producer.stopProducing()
 
     def write(self, packet):
         log.msg("write: packet len %s" % len(packet))

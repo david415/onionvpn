@@ -64,8 +64,8 @@ class HushVPNService(service.Service):
 
         reactor.addReader(tun_producer)
         reactor.addWriter(tun_consumer)
-        reactor.addReader(udp_ProducerProxy)
-        reactor.addWriter(udp_ConsumerProxy)
+
+        reactor.listenUDP(self.udp_local_port, udp_ConsumerProxy)
 
 
     def stopService(self):
