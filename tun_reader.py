@@ -4,11 +4,13 @@
 from twisted.internet import main
 from twisted.internet import reactor
 from twisted.internet import main, interfaces, reactor
+from twisted.python import log
 from zope.interface import implementer
 import os
 from scapy.all import IP, TCP, hexdump
 import struct
 import binascii
+
 
 # Internal modules
 from tun_factory import TUNFactory
@@ -39,30 +41,28 @@ class TUNPacketProducer(object):
 
 
     def start_reading(self):
-        """Register with the Twisted reactor."""
-        print "start_reading"
+        log.msg("start_reading")
         reactor.addReader(self)
 
     def stop_reading(self):
-        """Unregister with the Twisted reactor."""
-        print "stop_reading"
+        log.msg("stop_reading")
         reactor.removeReader(self)
 
     def pauseProducing(self):
-        print "pauseProducing"
+        log.msg("pauseProducing")
         reactor.removeReader(self)
 
     def resumeProducing(self):
-        print "resumeProducing"
+        log.msg("resumeProducing")
         self.start_reading()
 
     def stopProducing(self):
-        print "stopProducing"
+        log.msg("stopProducing")
         connDone = failure.Failure(main.CONNECTION_DONE)
         self.connectionLost(connDone)
 
     def connectionLost(self, reason):
-        print "connectionLost"
+        log.msg("connectionLost")
         self.stop_reading()
         self.consumer.unregisterProducer()
         self.tunDevice.close()
@@ -74,8 +74,9 @@ class TUNPacketProducer(object):
 
     def doRead(self):
         packet = self.tunDevice.read(self.tunDevice.mtu)
-        print "doRead: packet len %s" % len(packet)
-        print "doRead: calling consumer.write"
+        log.msg("doRead: packet len %s" % len(packet))
+        log.msg("doRead: calling consumer.write")
+        hexdump(packet)
         self.consumer.write(packet)
 
     def logPrefix(self):
@@ -104,7 +105,7 @@ class TUN_TestConsumer(object):
         self.producer.stop_reading()
 
     def write(self, packet):
-        print "TUN_TestConsumer: packet len %s" % len(packet)
+        log.msg("TUN_TestConsumer: packet len %s" % len(packet))
 
 
 def main():

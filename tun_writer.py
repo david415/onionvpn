@@ -57,7 +57,11 @@ class TUNPacketConsumer(object):
 
         if len(self.packets) > 0:
             log.msg("doWrite: calling tunDevice.write")
-            self.tunDevice.write(self.packets.pop(0))
+
+            packet = self.packets.pop(0)
+            log.msg("doWrite: packet summary: %s" % IP(packet).summary())
+
+            self.tunDevice.write(packet)
         if len(self.packets) == 0:
             log.msg("doWrite: calling reactor.removeWriter(self)")
             reactor.removeWriter(self)
