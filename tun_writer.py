@@ -29,10 +29,10 @@ class TUNPacketConsumer(object):
 
     def write(self, packet):
         log.msg("TUNPacketConsumer: write: packet len %s" % len(packet))
-        print IP(packet).summary()
+        log.msg(IP(packet).summary())
 
         if len(packet) < 40:
-            print "not forwarding small packet"
+            log.msg("not forwarding small packet")
             return
 
         try:

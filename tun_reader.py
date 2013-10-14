@@ -31,7 +31,7 @@ class TUNPacketProducer(object):
         self.mtu          = tunDevice.mtu
         self.fd           = os.dup(tunDevice.fileno())
 
-        print "__init__: calling consumer.registerProducer"
+        log.msg("__init__: calling consumer.registerProducer")
         consumer.registerProducer(self, streaming=True)
         self.consumer     = consumer
 
@@ -60,7 +60,7 @@ class TUNPacketProducer(object):
     def doRead(self):
         packet = self.tunDevice.read(self.tunDevice.mtu)
         log.msg("TUNPacketProducer: doRead: packet len %s" % len(packet))
-        print IP(packet).summary()
+        log.msg(IP(packet).summary())
 
         if len(packet) < 40:
             print "not forwarding small packet"
