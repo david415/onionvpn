@@ -10,7 +10,7 @@ import pytun
 from tun_factory import TUNFactory
 from tun_reader import TUNPacketProducer
 from tun_writer import TUNPacketConsumer
-from udp_consumer_producer import UDP_ConsumerProxy, UDP_ProducerProxy
+from udp_consumer_producer import UDP_ConsumerProducerProxy
 from tun_reader import TUN_Producer_Factory
 
 
@@ -50,23 +50,20 @@ class HushVPNService(service.Service):
         self.tunDevice.up()
 
         # UDP <-> TUN
-        tun_consumer           = TUNPacketConsumer(self.tunDevice)
+        tun_consumer = TUNPacketConsumer(self.tunDevice)
 
-        udp_ProducerProxy      = UDP_ProducerProxy(consumer = tun_consumer,
-                                                   host     = self.udp_local_ip,
-                                                   port     = self.udp_local_port)
+        udp_ConsumerProducerProxy = UDP_ConsumerProducerProxy(
+            consumer    = tun_consumer, 
+            local_ip    = self.udp_local_ip,
+            local_port  = self.udp_local_port,
+            remote_ip   = self.udp_remote_ip,
+            remote_port = self.udp_remote_port)
 
-        udp_ConsumerProxy      = UDP_ConsumerProxy(host = self.udp_remote_ip,
-                                                   port = self.udp_remote_port)
-
-        tun_producer           = TUNPacketProducer(self.tunDevice, consumer = udp_ConsumerProxy)
+        tun_producer = TUNPacketProducer(self.tunDevice, consumer = udp_ConsumerProducerProxy)
 
 
+        reactor.listenUDP(self.udp_local_port, udp_ConsumerProducerProxy)
         reactor.addReader(tun_producer)
-        reactor.addWriter(tun_consumer)
-
-        reactor.listenUDP(self.udp_local_port, udp_ConsumerProxy)
-
 
     def stopService(self):
         pass

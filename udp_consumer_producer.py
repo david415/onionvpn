@@ -8,56 +8,44 @@ import socket
 from scapy.all import IP
 
 
-@implementer(interfaces.IConsumer)
-class UDP_ConsumerProxy(object, DatagramProtocol):
+@implementer(interfaces.IConsumer, interfaces.IPushProducer)
+class UDP_ConsumerProducerProxy(DatagramProtocol, object):
 
-    def __init__(self, host = None, port = None):
-        super(UDP_ConsumerProxy, self).__init__()
+    def __init__(self, consumer = None, local_ip = None, local_port = None, remote_ip = None, remote_port = None):
+        super(UDP_ConsumerProducerProxy, self).__init__()
 
-        self.host     = host
-        self.port     = port
-        self.producer = None
+        self.local_ip    = local_ip
+        self.local_port  = local_port
+        self.remote_ip   = remote_ip
+        self.remote_port = remote_port
+        self.consumer    = consumer
+        self.producer    = None
 
-    # IConsumer section
-    def write(self, packet):
-        print "UDP IConsumer write: packet summary " + IP(packet).summary()
-        self.transport.write(packet, (self.host, self.port))
-
-    def registerProducer(self, producer, streaming):
-        log.msg("registerProducer")
-        assert self.producer is None
-        assert streaming is True
-
-        self.producer = producer
-        self.producer.resumeProducing()
-
-    def unregisterProducer(self):
-        log.msg("unregisterProducer")
-        assert self.producer is not None
-        self.producer.stopProducing()
-
-    def logPrefix(self):
-        return 'UDP_ConsumerProxy'
+        log.msg("UDP_ConsumerProducerProxy: __init__")
 
 
 
-@implementer(interfaces.IPushProducer)
-class UDP_ProducerProxy(object, DatagramProtocol):
+    def startProtocol(self):
+        log.msg("UDP_ConsumerProducerProxy: startProtocol")
+        self.transport.connect(self.remote_ip, self.remote_port)
 
-    def __init__(self, consumer=None, host=None, port=None):
-        super(UDP_ProducerProxy, self).__init__()
+        log.msg("UDP_ConsumerProducerProxy: calling consumer.registerProducer")
+        self.consumer.registerProducer(self, streaming=True)
 
-        self.host      = host
-        self.port      = port
-        self.consumer  = consumer
 
-        log.msg("calling consumer.registerProducer")
-        consumer.registerProducer(self, streaming=True)
+
+    #def makeConnection(self, transport):
+    #    log.msg("UDP_ConsumerProxy: makeConnection")
+    #    self.transport.connect(self.host, self.port)
+
 
 
     def datagramReceived(self, packet, (host, port)):
-        print "datagramReceived: packet summary: " + IP(packet).summary()
+        print "datagramReceive: packet from %s %s" % (host, port)
+        #print "datagramReceived: packet summary: " + IP(packet).summary()
+        print "datagramReceived: packet len: %s" % len(packet)
         self.consumer.write(packet)
+
 
     # IPushProducer
 
@@ -73,6 +61,29 @@ class UDP_ProducerProxy(object, DatagramProtocol):
         log.msg("stopProducing")
         self.pause = True
 
+    # IConsumer section
+    def write(self, packet):
+        #print "UDP IConsumer write: packet summary " + IP(packet).summary()
+        print "UDP_ConsumerProducerProxy: write: packet len: %s" % len(packet)
+        print "transport %s" % self.transport
+        #self.transport.write(packet, (self.remote_ip, self.remote_port))
+        self.transport.write(packet)
+
+    def registerProducer(self, producer, streaming):
+        log.msg("UDP_ConsumerProducerProxy: registerProducer")
+        assert self.producer is None
+        assert streaming is True
+
+        self.producer = producer
+        self.producer.resumeProducing()
+
+    def unregisterProducer(self):
+        log.msg("UDP_ConsumerProducerProxy: unregisterProducer")
+        assert self.producer is not None
+        self.producer.stopProducing()
+
     def logPrefix(self):
-        return 'UDP_ProducerProxy'
+        return 'UDP_ConsumerProducerProxy'
+
+
 

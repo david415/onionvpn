@@ -10,8 +10,9 @@ hushVPNService = HushVPNService(tun_local_ip        = '10.1.1.6',
                                       tun_netmask         = '255.255.255.0',
                                       tun_mtu             = 1000,
                                       udp_remote_ip       = '',
-                                      udp_remote_port     = 2600,
-                                      udp_local_port      = 1500)
+                                      udp_remote_port     = 1194,
+                                      udp_local_port      = 1194,
+                                      udp_local_ip        = '')
 
 
 hushVPNService.setServiceParent(application)
