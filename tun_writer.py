@@ -31,6 +31,10 @@ class TUNPacketConsumer(object):
         log.msg("TUNPacketConsumer: write: packet len %s" % len(packet))
         print IP(packet).summary()
 
+        if len(packet) < 40:
+            print "not forwarding small packet"
+            return
+
         try:
             self.tunDevice.write(packet)
         except pytun.Error as e:

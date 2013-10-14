@@ -21,31 +21,16 @@ class UDP_ConsumerProducerProxy(DatagramProtocol, object):
         self.consumer    = consumer
         self.producer    = None
 
-        log.msg("UDP_ConsumerProducerProxy: __init__")
-
-
 
     def startProtocol(self):
-        log.msg("UDP_ConsumerProducerProxy: startProtocol")
         self.transport.connect(self.remote_ip, self.remote_port)
-
-        log.msg("UDP_ConsumerProducerProxy: calling consumer.registerProducer")
         self.consumer.registerProducer(self, streaming=True)
-
-
-
-    #def makeConnection(self, transport):
-    #    log.msg("UDP_ConsumerProxy: makeConnection")
-    #    self.transport.connect(self.host, self.port)
-
-
 
     def datagramReceived(self, packet, (host, port)):
         print "datagramReceive: packet from %s %s" % (host, port)
         print "datagramReceived: packet summary: " + IP(packet).summary()
         print "datagramReceived: packet len: %s" % len(packet)
         self.consumer.write(packet)
-
 
     # IPushProducer
 
