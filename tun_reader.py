@@ -12,10 +12,6 @@ import struct
 import binascii
 
 
-# Internal modules
-from tun_factory import TUNFactory
-
-
 class TUN_Producer_Factory(object):
 
     def __init__(self, tunDevice):
@@ -38,7 +34,6 @@ class TUNPacketProducer(object):
         print "__init__: calling consumer.registerProducer"
         consumer.registerProducer(self, streaming=True)
         self.consumer     = consumer
-
 
     def pauseProducing(self):
         log.msg("pauseProducing")
@@ -65,6 +60,9 @@ class TUNPacketProducer(object):
     def doRead(self):
         packet = self.tunDevice.read(self.tunDevice.mtu)
         log.msg("TUNPacketProducer: doRead: packet len %s" % len(packet))
+
+        print IP(packet).summary()
+
         #hexdump(packet)
         self.consumer.write(packet)
 

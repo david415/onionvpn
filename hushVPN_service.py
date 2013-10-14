@@ -5,13 +5,10 @@ from twisted.internet import reactor
 from twisted.application import service
 import pytun
 
-
 # Internal modules
-from tun_factory import TUNFactory
 from tun_reader import TUNPacketProducer
 from tun_writer import TUNPacketConsumer
 from udp_consumer_producer import UDP_ConsumerProducerProxy
-from tun_reader import TUN_Producer_Factory
 
 
 
@@ -35,7 +32,7 @@ class HushVPNService(service.Service):
         self.udp_remote_port = udp_remote_port
         self.udp_local_ip    = udp_local_ip
         self.udp_local_port  = udp_local_port
-        self.noisey = True
+
 
     def startService(self):
 
@@ -64,6 +61,7 @@ class HushVPNService(service.Service):
 
         reactor.listenUDP(self.udp_local_port, udp_ConsumerProducerProxy)
         reactor.addReader(tun_producer)
+
 
     def stopService(self):
         pass
