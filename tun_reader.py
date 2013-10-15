@@ -7,19 +7,9 @@ from twisted.internet import main, interfaces, reactor
 from twisted.python import log, failure
 from zope.interface import implementer
 import os
-from scapy.all import IP, TCP, hexdump
+from scapy.all import IP
 import struct
 import binascii
-
-
-class TUN_Producer_Factory(object):
-
-    def __init__(self, tunDevice):
-        self.tunDevice = tunDevice
-
-    def buildProducer(self, consumer=None):
-        return TUNPacketProducer(self.tunDevice, consumer)
-
 
 
 @implementer(interfaces.IReadDescriptor, interfaces.IPushProducer)
@@ -31,7 +21,6 @@ class TUNPacketProducer(object):
         self.mtu          = tunDevice.mtu
         self.fd           = os.dup(tunDevice.fileno())
 
-        log.msg("__init__: calling consumer.registerProducer")
         consumer.registerProducer(self, streaming=True)
         self.consumer     = consumer
 
@@ -59,14 +48,12 @@ class TUNPacketProducer(object):
 
     def doRead(self):
         packet = self.tunDevice.read(self.tunDevice.mtu)
-        log.msg("TUNPacketProducer: doRead: packet len %s" % len(packet))
-        log.msg(IP(packet).summary())
+        #log.msg(IP(packet).summary())
 
         if len(packet) < 40:
-            print "not forwarding small packet"
+            #print "not forwarding small packet"
             return
 
-        #hexdump(packet)
         self.consumer.write(packet)
 
     def logPrefix(self):

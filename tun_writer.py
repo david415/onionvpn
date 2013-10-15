@@ -17,22 +17,21 @@ class TUNPacketConsumer(object):
         self.producer      = None
 
     def registerProducer(self, producer, streaming):
-        log.msg("TUNPacketConsumer: registerProducer")
+        log.msg("registerProducer")
         assert streaming is True
 
         self.producer = producer
         self.producer.resumeProducing()
 
     def unregisterProducer(self):
-        log.msg("TUNPacketConsumer: unregisterProducer")
+        log.msg("unregisterProducer")
         self.producer.stopProducing()
 
     def write(self, packet):
-        log.msg("TUNPacketConsumer: write: packet len %s" % len(packet))
-        log.msg(IP(packet).summary())
+        #log.msg(IP(packet).summary())
 
         if len(packet) < 40:
-            log.msg("not forwarding small packet")
+            #log.msg("not forwarding small packet")
             return
 
         try:
