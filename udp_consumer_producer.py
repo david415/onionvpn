@@ -27,7 +27,7 @@ class UDP_ConsumerProducerProxy(DatagramProtocol, object):
         self.consumer.registerProducer(self, streaming=True)
 
     def datagramReceived(self, packet, (host, port)):
-        #log.msg("datagramReceived: packet summary: " + IP(packet).summary())
+        log.msg("datagramReceived: packet summary: " + IP(packet).summary())
         self.consumer.write(packet)
 
     # IPushProducer
@@ -43,7 +43,7 @@ class UDP_ConsumerProducerProxy(DatagramProtocol, object):
 
     # IConsumer section
     def write(self, packet):
-        #log.msg("UDP IConsumer write: packet summary " + IP(packet).summary())
+        log.msg("UDP IConsumer write: packet summary " + IP(packet).summary())
         self.transport.write(packet)
 
     def registerProducer(self, producer, streaming):

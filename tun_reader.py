@@ -48,7 +48,7 @@ class TUNPacketProducer(object):
 
     def doRead(self):
         packet = self.tunDevice.read(self.tunDevice.mtu)
-        #log.msg(IP(packet).summary())
+        log.msg(IP(packet).summary())
 
         if len(packet) < 40:
             #print "not forwarding small packet"

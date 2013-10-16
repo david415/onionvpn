@@ -28,7 +28,7 @@ class TUNPacketConsumer(object):
         self.producer.stopProducing()
 
     def write(self, packet):
-        #log.msg(IP(packet).summary())
+        log.msg(IP(packet).summary())
 
         if len(packet) < 40:
             #log.msg("not forwarding small packet")
