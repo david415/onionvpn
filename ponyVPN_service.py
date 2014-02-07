@@ -12,7 +12,7 @@ from udp_consumer_producer import UDP_ConsumerProducerProxy
 
 
 
-class HushVPNService(service.Service):
+class PonyVPNService(service.Service):
 
     def __init__(self, 
                  tun_local_ip    = None,

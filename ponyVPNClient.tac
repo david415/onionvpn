@@ -1,11 +1,11 @@
 
 
 from twisted.application import service
-from hushVPN_service import HushVPNService
+from ponyVPN_service import PonyVPNService
 
 
-application    = service.Application("HushVPN")
-hushVPNService = HushVPNService(tun_local_ip        = '10.1.1.6',
+application    = service.Application("PonyVPN")
+ponyVPNService = PonyVPNService(tun_local_ip        = '10.1.1.6',
                                       tun_remote_ip       = '10.1.1.5',
                                       tun_netmask         = '255.255.255.0',
                                       tun_mtu             = 1000,
@@ -15,4 +15,4 @@ hushVPNService = HushVPNService(tun_local_ip        = '10.1.1.6',
                                       udp_local_ip        = '')
 
 
-hushVPNService.setServiceParent(application)
+ponyVPNService.setServiceParent(application)
