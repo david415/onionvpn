@@ -6,52 +6,36 @@ from twisted.application import service
 import pytun
 
 # Internal modules
-from tun_reader import TUNPacketProducer
-from tun_writer import TUNPacketConsumer
+from tun_protocol import TunProducerConsumer
 from icmp_readerwriter import ICMPReaderWriter
-
+from twisted.pair.tuntap import TuntapPort
 
 
 class PonyVPNService(service.Service):
 
     def __init__(self, 
-                 tun_local_ip    = None,
-                 tun_remote_ip   = None,
-                 tun_netmask     = None,
-                 tun_mtu         = None,
+                 tun_name    = None,
                  remote_ip   = None,
                  local_ip    = None):
 
-        self.tun_local_ip    = tun_local_ip
-        self.tun_remote_ip   = tun_remote_ip
-        self.tun_netmask     = tun_netmask
-        self.tun_mtu         = tun_mtu
+        self.tun_name    = tun_name
         self.remote_ip   = remote_ip
         self.local_ip    = local_ip
 
     def startService(self):
-        print "startService"
 
-        self.tunDevice = pytun.TunTapDevice(flags=pytun.IFF_TUN|pytun.IFF_NO_PI)
-        self.tunDevice.addr    = self.tun_local_ip
-        self.tunDevice.dstaddr = self.tun_remote_ip
-        self.tunDevice.netmask = self.tun_netmask
-        self.tunDevice.mtu     = self.tun_mtu
-
-        # TODO: drop priveleges after bringing up interface
-        self.tunDevice.up()
-
-        # ICMP <-> TUN
-        tun_consumer = TUNPacketConsumer(self.tunDevice)
+        tun_protocol = TunProducerConsumer()
 
         icmp_ConsumerProducer = ICMPReaderWriter(
-            consumer    = tun_consumer, 
+            consumer    = tun_protocol, 
             local_ip    = self.local_ip,
             remote_ip   = self.remote_ip)
 
-        tun_producer = TUNPacketProducer(self.tunDevice, consumer = icmp_ConsumerProducer)
+        tun_protocol.setConsumer(icmp_ConsumerProducer)
 
-        reactor.addReader(tun_producer)
+        tun = TuntapPort(b"tun0", tun_protocol, reactor=reactor)
+
+        tun.startListening()
         icmp_ConsumerProducer.start()
 
     def stopService(self):
