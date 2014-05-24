@@ -5,14 +5,12 @@ from ponyVPN_service import PonyVPNService
 
 
 application    = service.Application("PonyVPN")
-ponyVPNService = PonyVPNService(tun_local_ip        = '10.1.1.6',
-                                      tun_remote_ip       = '10.1.1.5',
+ponyVPNService = PonyVPNService(tun_local_ip        = '10.1.1.5',
+                                      tun_remote_ip       = '10.1.1.6',
                                       tun_netmask         = '255.255.255.0',
-                                      tun_mtu             = 1000,
-                                      udp_remote_ip       = '',
-                                      udp_remote_port     = 1194,
-                                      udp_local_port      = 1194,
-                                      udp_local_ip        = '')
+                                      tun_mtu             = 1400,
+                                      remote_ip       = '192.168.2.1',
+                                      local_ip        = '192.168.1.2')
 
 
 ponyVPNService.setServiceParent(application)

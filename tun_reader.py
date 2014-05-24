@@ -15,7 +15,6 @@ import binascii
 @implementer(interfaces.IReadDescriptor, interfaces.IPushProducer)
 class TUNPacketProducer(object):
 
-
     def __init__(self, tunDevice, consumer=None):
         self.tunDevice    = tunDevice
         self.mtu          = tunDevice.mtu
@@ -23,6 +22,11 @@ class TUNPacketProducer(object):
 
         consumer.registerProducer(self, streaming=True)
         self.consumer     = consumer
+
+    def logPrefix(self):
+        return 'TUNPacketProducer'
+
+    # IPushProducer
 
     def pauseProducing(self):
         log.msg("pauseProducing")
@@ -34,6 +38,8 @@ class TUNPacketProducer(object):
 
     def stopProducing(self):
         log.msg("stopProducing")
+
+    # IReadDescriptor
 
     def connectionLost(self, reason):
         log.msg("connectionLost")
@@ -47,16 +53,9 @@ class TUNPacketProducer(object):
         return self.fd
 
     def doRead(self):
+        log.msg("doRead")
         packet = self.tunDevice.read(self.tunDevice.mtu)
-        log.msg(IP(packet).summary())
-
-        if len(packet) < 40:
-            #print "not forwarding small packet"
-            return
-
         self.consumer.write(packet)
 
-    def logPrefix(self):
-        return 'TUNPacketProducer'
 
 
