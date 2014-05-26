@@ -7,6 +7,7 @@ from twisted.internet import reactor, protocol, interfaces
 from twisted.python import log, failure
 
 from scapy.all import hexdump, IP, TCP
+import struct
 
 
 @implementer(interfaces.IPushProducer, interfaces.IConsumer)
@@ -27,12 +28,12 @@ class TunProducerConsumer(IPProtocol):
     def datagramReceived(self, datagram, partial=None):
         assert partial == 0
 
-        # debug output
-        print "datagramReceived"
-        print IP(datagram).summary()
-        hexdump(datagram)
-
-        self.consumer.write(datagram)
+        try:
+            IP(datagram)
+        except struct.error:
+            pass
+        else:
+            self.consumer.write(datagram)
 
     # IPushProducer
 
@@ -48,7 +49,10 @@ class TunProducerConsumer(IPProtocol):
    # IConsumer
 
     def write(self, packet):
-        self.transport.write(packet)
+
+        # wtf. fix weird bug
+        if len(packet) != 56:
+            self.transport.write(packet)
 
     def registerProducer(self, producer, streaming):
         log.msg("registerProducer")

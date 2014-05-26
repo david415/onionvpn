@@ -51,7 +51,6 @@ class ICMPReaderWriter(object):
 
     def write(self, packet):
         log.msg("write")
-
         icmp_packet = IP(dst=self.remote_ip)/ICMP()/Raw(load=str(packet))
         self.socket.sendto(str(icmp_packet), (self.remote_ip,0))
 
@@ -84,10 +83,8 @@ class ICMPReaderWriter(object):
 
         # XXX
         packet_str = self.socket.recv(65565)
-        inner_packet = IP(packet_str).load
-        try:
-            ip_packet = IP(inner_packet)
-        except struct.error:
-            pass
-        else:
-            self.consumer.write(inner_packet)
+        outer_packet = IP(packet_str)
+
+        if ICMP in outer_packet:
+            inner_packet = outer_packet.load
+            self.consumer.write(str(inner_packet))
