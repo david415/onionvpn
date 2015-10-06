@@ -6,7 +6,7 @@ import socket
 from twisted.internet import interfaces
 from twisted.internet import defer
 from twisted.python import log
-
+from twisted.internet.protocol import Factory
 
 def convert_ipv6_to_onion(ipv6_addr):
     packet = socket.inet_pton(socket.AF_INET6, ipv6_addr)
@@ -14,7 +14,6 @@ def convert_ipv6_to_onion(ipv6_addr):
 
 class PooledOnionFactory(Factory):
     def __init__(self):
-        super(Factory, self).__init__()
         self.pool = set()
 
     def buildProtocol(self, addr):
@@ -28,14 +27,15 @@ class PooledOnionFactory(Factory):
         return p
 
 @implementer(interfaces.IConsumer)
-class Ipv6OnionConsumer(object):
+class IPv6OnionConsumer(object):
 
     def __init__(self):
-        super(Ipv6OnionConsumer, self).__init__()
+        super(IPv6OnionConsumer, self).__init__()
         self.pooledOnionFactory = PooledOnionFactory()
+        self.producer = None
 
     def logPrefix(self):
-        return 'Ipv6OnionConsumer'
+        return 'IPv6OnionConsumer'
 
     def getOnionConnection(self, onion):
         """ getOnionConnection returns a deferred which fires
@@ -50,18 +50,19 @@ class Ipv6OnionConsumer(object):
 
     # IConsumer section
     def write(self, packet):
+        print "write"
         try:
             ip_packet = IP(datagram)
             assert ip_packet.version == 6
             # XXX assert that the source address is correct?
-
-            onion = convert_ipv6_to_onion(ip_packet.dst)
-            d = self.getOnionConnection(onion)
-            d.addCallback(lambda p: p.transport.write(packet))
-            # XXX dropped deferred
-
         except struct.error:
             log.msg("not an ip packet")
+            return
+
+        onion = convert_ipv6_to_onion(ip_packet.dst)
+        d = self.getOnionConnection(onion)
+        d.addCallback(lambda p: p.transport.write(packet))
+        # XXX dropped deferred
 
     def registerProducer(self, producer, streaming):
         log.msg("registerProducer")
