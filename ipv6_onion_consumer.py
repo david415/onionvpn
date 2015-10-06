@@ -12,10 +12,11 @@ from convert import convert_ipv6_to_onion
 
 class PooledOnionFactory(Factory):
     def __init__(self):
+        print "PooledOnionFactory init"
         self.pool = set()
 
     def buildProtocol(self, addr):
-        print "PooledOnionFactory buildProtocol"
+        print "PooledOnionFactory buildProtocol addr %s" % (addr,)
         # XXX todo: assert type TorOnionAddress
         print "------- addr onion uri == %s" % (addr.onion_uri,)
         # XXX correct?
@@ -29,6 +30,7 @@ class IPv6OnionConsumer(object):
 
     def __init__(self):
         super(IPv6OnionConsumer, self).__init__()
+        print "IPv6OnionConsumer init"
         self.pooledOnionFactory = PooledOnionFactory()
         self.producer = None
 
@@ -48,7 +50,7 @@ class IPv6OnionConsumer(object):
 
     # IConsumer section
     def write(self, packet):
-        print "write"
+        print "write()"
         try:
             ip_packet = IP(datagram)
             assert ip_packet.version == 6
@@ -63,7 +65,7 @@ class IPv6OnionConsumer(object):
         # XXX dropped deferred
 
     def registerProducer(self, producer, streaming):
-        log.msg("registerProducer")
+        print "registerProducer"
         assert self.producer is None
         assert streaming is True
 
@@ -71,6 +73,6 @@ class IPv6OnionConsumer(object):
         self.producer.resumeProducing()
 
     def unregisterProducer(self):
-        log.msg("unregisterProducer")
+        print "unregisterProducer"
         assert self.producer is not None
         self.producer.stopProducing()
