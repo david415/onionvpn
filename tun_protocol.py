@@ -12,7 +12,7 @@ from twisted.pair.ip import IPProtocol
 class TunProducerConsumer(IPProtocol):
 
     def __init_(self):
-
+        print "__init__"
         # IConsumer
         self.producer = None
 
@@ -27,6 +27,7 @@ class TunProducerConsumer(IPProtocol):
 
     # IPProtocol
     def datagramReceived(self, datagram, partial=None):
+        log.msg("datagramReceived")
         # XXX should we keep this assertion?
         # TuntapPort expects our function signature to contain a partial= argument but sets it's value to zero.
         # https://twistedmatrix.com/trac/browser/tags/releases/twisted-15.4.0/twisted/pair/tuntap.py#L338
@@ -47,6 +48,7 @@ class TunProducerConsumer(IPProtocol):
    # IConsumer
 
     def write(self, packet):
+        log.msg("write")
         self.transport.write(packet)
 
     def registerProducer(self, producer, streaming):
