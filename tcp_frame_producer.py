@@ -1,25 +1,40 @@
 from zope.interface import implementer
 
 from twisted.internet import interfaces
-from twisted.python import log
 from twisted.protocols.basic import Int16StringReceiver
-from twisted.internet.protocol import Factory
+from twisted.internet.protocol import Protocol, Factory
 
 class PersistentSingletonFactory(Factory):
     def __init__(self, protocol):
+        print "PersistentSingletonFactory __init__"
         self.protocol = protocol
 
     def buildProtocol(self, addr):
-        return self.protocol
+        print "PersistentSingletonFactory buildProtocol addr %s" % (addr,)
+        p = PersistentProtocol(self.protocol)
+        return p
+
+class PersistentProtocol(Protocol):
+    def __init__(self, target_protocol):
+        self.target_protocol = target_protocol
+
+    def logPrefix(self):
+        return 'PersistentProtocol'
+
+    def dataReceived(self, data):
+        print "PersistentProtocol dataReceived"
+        self.target_protocol.dataReceived(data)
 
 @implementer(interfaces.IPushProducer)
 class TcpFrameProducer(Int16StringReceiver, object):
     def __init__(self, local_addr, consumer = None):
         super(TcpFrameProducer, self).__init__()
+        print "TcpFrameProducer init"
         self.local_addr = local_addr
         self.consumer = consumer
 
     def stringReceived(self, data):
+        print "stringReceived"
         # assert that it's an IPv6 packet
         try:
             packet = IP(data)
@@ -39,10 +54,10 @@ class TcpFrameProducer(Int16StringReceiver, object):
 
     # IPushProducer
     def pauseProducing(self):
-        log.msg("pauseProducing")
+        print "pauseProducing"
 
     def resumeProducing(self):
-        log.msg("resumeProducing")
+        print "resumeProducing"
 
     def stopProducing(self):
-        log.msg("stopProducing")
+        print "stopProducing"
