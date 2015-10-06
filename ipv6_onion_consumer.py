@@ -1,8 +1,10 @@
-from scapy.all import IP
+from scapy.all import IPv6
 from zope.interface import implementer
 import socket
+import struct
 
 from twisted.internet import interfaces
+from twisted.internet.endpoints import clientFromString
 from twisted.internet import defer
 from twisted.python import log
 from twisted.internet.protocol import Factory
@@ -28,9 +30,10 @@ class PooledOnionFactory(Factory):
 @implementer(interfaces.IConsumer)
 class IPv6OnionConsumer(object):
 
-    def __init__(self):
+    def __init__(self, reactor):
         super(IPv6OnionConsumer, self).__init__()
         print "IPv6OnionConsumer init"
+        self.reactor = reactor
         self.pooledOnionFactory = PooledOnionFactory()
         self.producer = None
 
@@ -44,7 +47,7 @@ class IPv6OnionConsumer(object):
         if onion in self.pooledOnionFactory.pool:
             return defer.succeed(self.pooledOnionFactory.pool[onion])
         else:
-            torEndpoint = clientFromString("tor:%s.onion" % onion)
+            torEndpoint = clientFromString(self.reactor, "tor:%s.onion:666" % onion)
             d = torEndpoint.connect(self.pooledOnionFactory)
             return d
 
@@ -52,13 +55,12 @@ class IPv6OnionConsumer(object):
     def write(self, packet):
         print "write()"
         try:
-            ip_packet = IP(datagram)
-            assert ip_packet.version == 6
+            ip_packet = IPv6(packet)
             # XXX assert that the source address is correct?
         except struct.error:
-            log.msg("not an ip packet")
+            log.msg("not an IPv6 packet")
             return
-
+        print "ipv6 onion consumer: write: ip dest: %s" % (ip_packet.dst,)
         onion = convert_ipv6_to_onion(ip_packet.dst)
         d = self.getOnionConnection(onion)
         d.addCallback(lambda p: p.transport.write(packet))

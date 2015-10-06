@@ -25,7 +25,7 @@ class OnionVPNService(service.Service):
         frame_producer_protocol = TcpFrameProducer(local_addr, consumer = tun_protocol)
         persistentFactory = PersistentSingletonFactory(frame_producer_protocol)
 
-        ipv6_onion_consumer = IPv6OnionConsumer()
+        ipv6_onion_consumer = IPv6OnionConsumer(reactor)
         tun_protocol.setConsumer(ipv6_onion_consumer)
 
         onion_endpoint = serverFromString(reactor, "onion:80:hiddenServiceDir=%s" % self.onion_key_dir)
