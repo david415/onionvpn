@@ -1,16 +1,14 @@
 from scapy.all import IP
 from zope.interface import implementer
 import socket
-#from txtorcon.endpoints import TorOnionAddress
 
 from twisted.internet import interfaces
 from twisted.internet import defer
 from twisted.python import log
 from twisted.internet.protocol import Factory
 
-def convert_ipv6_to_onion(ipv6_addr):
-    packet = socket.inet_pton(socket.AF_INET6, ipv6_addr)
-    return packet[:10]
+from convert import convert_ipv6_to_onion
+
 
 class PooledOnionFactory(Factory):
     def __init__(self):
