@@ -1,8 +1,14 @@
+# import stuct
+import struct
+
 from zope.interface import implementer
 
 from twisted.internet import interfaces
 from twisted.protocols.basic import Int16StringReceiver
 from twisted.internet.protocol import Protocol, Factory
+from twisted.python import log
+from scapy.all import IP
+
 
 class PersistentSingletonFactory(Factory):
     def __init__(self, protocol):
@@ -14,6 +20,7 @@ class PersistentSingletonFactory(Factory):
         p = PersistentProtocol(self.protocol)
         return p
 
+
 class PersistentProtocol(Protocol):
     def __init__(self, target_protocol):
         self.target_protocol = target_protocol
@@ -23,17 +30,26 @@ class PersistentProtocol(Protocol):
 
     def dataReceived(self, data):
         print "PersistentProtocol dataReceived"
+        print(self.target_protocol)
+
+        # Forward data from hidden service to TcpFrameProducer.dataReceived()
+        # to deframe the data
         self.target_protocol.dataReceived(data)
+
 
 @implementer(interfaces.IPushProducer)
 class TcpFrameProducer(Int16StringReceiver, object):
-    def __init__(self, local_addr, consumer = None):
+    def __init__(self, local_addr, consumer=None):
         super(TcpFrameProducer, self).__init__()
         print "TcpFrameProducer init"
         self.local_addr = local_addr
         self.consumer = consumer
 
     def stringReceived(self, data):
+        """
+        Called with the packet from the onion interface after it is deframed
+        """
+        # XXX: This isn't being called when the data isn't framed
         print "stringReceived"
         # assert that it's an IPv6 packet
         try:

@@ -1,10 +1,13 @@
 #!/usr/bin/env python
+import struct
 
 from zope.interface import implementer
 
-from twisted.internet import reactor, protocol, interfaces
-from twisted.pair.tuntap import TuntapPort
+from twisted.internet import interfaces
 from twisted.pair.ip import IPProtocol
+from twisted.python import log
+
+from scapy.all import IP
 
 
 @implementer(interfaces.IPushProducer, interfaces.IConsumer)
@@ -28,9 +31,16 @@ class TunProducerConsumer(IPProtocol):
     def datagramReceived(self, datagram, partial=None):
         print "datagramReceived"
         # XXX should we keep this assertion?
-        # TuntapPort expects our function signature to contain a partial= argument but sets it's value to zero.
+        # TuntapPort expects our function signature to contain a
+        # `partial` argument but always sets it's value to zero.
         # https://twistedmatrix.com/trac/browser/tags/releases/twisted-15.4.0/twisted/pair/tuntap.py#L338
         assert partial == 0
+        try:
+            packet = IP(datagram)
+            print("<datagram_summary> {}".format(packet.summary()))
+            assert packet.version == 6
+        except struct.error:
+            log.msg("not an IPv6 packet")
         self.consumer.write(datagram)
 
     # IPushProducer
@@ -44,10 +54,9 @@ class TunProducerConsumer(IPProtocol):
     def stopProducing(self):
         print "stopProducing"
 
-   # IConsumer
-
+    # IConsumer
     def write(self, packet):
-        print "write"
+        # Write from TUN to the Onion consumer
         self.transport.write(packet)
 
     def registerProducer(self, producer, streaming):

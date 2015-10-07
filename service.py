@@ -22,15 +22,20 @@ class OnionVPNService(service.Service):
         local_addr = convert_onion_to_ipv6(self.onion)
 
         tun_protocol = TunProducerConsumer()
-        frame_producer_protocol = TcpFrameProducer(local_addr, consumer = tun_protocol)
+        frame_producer_protocol = TcpFrameProducer(local_addr,
+                                                   consumer=tun_protocol)
         persistentFactory = PersistentSingletonFactory(frame_producer_protocol)
 
         ipv6_onion_consumer = IPv6OnionConsumer(reactor)
         tun_protocol.setConsumer(ipv6_onion_consumer)
 
-        onion_endpoint = serverFromString(reactor, "onion:80:hiddenServiceDir=%s" % self.onion_key_dir)
+        onion_endpoint = serverFromString(
+            reactor,
+            "onion:80:hiddenServiceDir=%s" % self.onion_key_dir
+        )
 
         d = onion_endpoint.listen(persistentFactory)
+
         def display(result):
             print result
         d.addCallback(display)
