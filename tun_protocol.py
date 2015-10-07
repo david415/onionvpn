@@ -7,7 +7,7 @@ from twisted.internet import interfaces
 from twisted.pair.ip import IPProtocol
 from twisted.python import log
 
-from scapy.all import IP
+from scapy.all import IPv6
 
 
 @implementer(interfaces.IPushProducer, interfaces.IConsumer)
@@ -36,7 +36,7 @@ class TunProducerConsumer(IPProtocol):
         # https://twistedmatrix.com/trac/browser/tags/releases/twisted-15.4.0/twisted/pair/tuntap.py#L338
         assert partial == 0
         try:
-            packet = IP(datagram)
+            packet = IPv6(datagram)
             print("<datagram_summary> {}".format(packet.summary()))
             assert packet.version == 6
         except struct.error:
