@@ -13,7 +13,7 @@ from scapy.all import IP
 class PersistentSingletonFactory(Factory):
     def __init__(self, protocol):
         print "PersistentSingletonFactory __init__"
-        self.protocol = protocol
+        self.protocol = Protocol()
 
     def buildProtocol(self, addr):
         print "PersistentSingletonFactory buildProtocol addr %s" % (addr,)
