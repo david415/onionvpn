@@ -57,6 +57,7 @@ class TunProducerConsumer(IPProtocol):
     # IConsumer
     def write(self, packet):
         # Write from TUN to the Onion consumer
+        print "-------- <> tun write!"
         self.transport.write(packet)
 
     def registerProducer(self, producer, streaming):
