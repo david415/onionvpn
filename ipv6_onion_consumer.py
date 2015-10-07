@@ -4,9 +4,9 @@ import struct
 
 from twisted.internet import interfaces
 from twisted.internet.endpoints import clientFromString
-from twisted.internet import defer, protocol
+from twisted.internet import defer
 from twisted.python import log
-from twisted.internet.protocol import Protocol, Factory
+from twisted.internet.protocol import Factory
 
 from convert import convert_ipv6_to_onion
 
@@ -22,7 +22,7 @@ class PooledOnionFactory(Factory):
         print(dir(addr))
         # print "------- addr onion uri == %s" % (addr.onion_uri,)
         # XXX correct?
-        p = Protocol()
+        p = self.Protocol()
         self.pool[addr.onion_uri] = p
         p.factory = self
         return p
