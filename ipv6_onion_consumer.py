@@ -3,25 +3,13 @@ from zope.interface import implementer
 import struct
 
 from twisted.internet import interfaces
-from twisted.internet.endpoints import clientFromString
+from twisted.internet.endpoints import clientFromString, connectProtocol
 from twisted.internet import defer
 from twisted.python import log
 from twisted.internet.protocol import Factory, Protocol
 
 from convert import convert_ipv6_to_onion
 
-
-class PooledOnionFactory(Factory):
-    def __init__(self):
-        print "PooledOnionFactory init"
-        self.pool = set()
-
-    def buildProtocol(self, addr):
-        print "PooledOnionFactory buildProtocol addr %s" % (addr,)
-        p = Protocol()
-        self.pool[addr.onion_uri] = p
-        p.factory = self
-        return p
 
 
 @implementer(interfaces.IConsumer)
@@ -40,17 +28,21 @@ class IPv6OnionConsumer(object):
         super(IPv6OnionConsumer, self).__init__()
         print "IPv6OnionConsumer init"
         self.reactor = reactor
-        self.pooledOnionFactory = PooledOnionFactory()
         self.producer = None
+        self.onion_conn_d = defer.succeed(None)
+        self.pool = {}
 
     def logPrefix(self):
         return 'IPv6OnionConsumer'
 
-    def write_to_onion(self, tor_endpoint, packet):
+    def write_to_onion(self, protocol, packet):
         print('writing packet to onion')
         packet_len = len(packet)
-        data = struct.pack('H!', packet_len) + packet # XXX correct?
-        tor_endpoint.transport.write(data)
+        data = struct.pack('!H', packet_len) + packet
+        print "PROTOCOL %s" % (protocol,)
+        print "TRANSPORT %s" % (protocol.transport,)
+        protocol.transport.write(data)
+        return None
 
     def onionConnectionFailed(self, failure):
         log.msg('onion connection failed')
@@ -60,16 +52,22 @@ class IPv6OnionConsumer(object):
         """ getOnionConnection returns a deferred which fires
         with a client connection to an onion address.
         """
-        if onion in self.pooledOnionFactory.pool:
+        if onion in self.pool:
             log.msg("Found onion connection in pool to %s.onion" % onion)
-            return defer.succeed(self.pooledOnionFactory.pool[onion])
+            return defer.succeed(self.pool[onion])
         else:
             log.msg("Did not find connection to %s.onion in pool" % onion)
             tor_endpoint = clientFromString(
                 self.reactor, "tor:%s.onion:80" % onion)
 
             print(tor_endpoint)
-            d = tor_endpoint.connect(self.pooledOnionFactory)
+            p = Protocol()
+            p.onion = onion
+
+            d = connectProtocol(tor_endpoint, p)
+            def add_to_pool(result):
+                self.pool[onion] = result
+            d.addCallback(add_to_pool)
             return d
 
     # IConsumer section
@@ -89,11 +87,10 @@ class IPv6OnionConsumer(object):
         onion = convert_ipv6_to_onion(ip_packet.dst)
         print("Onion connection: {} -> {}".format(ip_packet.dst, onion))
 
-        d = self.getOnionConnection(onion)
+        self.onion_conn_d.addCallback(lambda ign: self.getOnionConnection(onion))
         # Send data when connection opens
-        d.addCallback(lambda endpoint: self.write_to_onion(endpoint, packet))
-        d.addErrback(self.onionConnectionFailed)
-        # XXX dropped deferred
+        self.onion_conn_d.addCallback(lambda protocol: self.write_to_onion(protocol, packet))
+        self.onion_conn_d.addErrback(self.onionConnectionFailed)
 
     def registerProducer(self, producer, streaming):
         print "registerProducer"
