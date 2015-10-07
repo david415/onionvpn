@@ -22,7 +22,7 @@ class PooledOnionFactory(Factory):
         print(dir(addr))
         # print "------- addr onion uri == %s" % (addr.onion_uri,)
         # XXX correct?
-        p = self.Protocol()
+        p = Protocol()
         self.pool[addr.onion_uri] = p
         p.factory = self
         return p
@@ -52,7 +52,9 @@ class IPv6OnionConsumer(object):
 
     def write_to_onion(self, tor_endpoint, packet):
         print('writing packet to onion')
-        tor_endpoint.transport.write(packet)
+        packet_len = len(packet)
+        data = struct.pack('H!', packet_len) + packet # XXX correct?
+        tor_endpoint.transport.write(data)
 
     def onionConnectionFailed(self, failure):
         log.msg('onion connection failed')
@@ -93,7 +95,7 @@ class IPv6OnionConsumer(object):
 
         d = self.getOnionConnection(onion)
         # Send data when connection opens
-        d.addCallback(self.write_to_onion, packet)
+        d.addCallback(lambda endpoint: self.write_to_onion(endpoint, packet))
         d.addErrback(self.onionConnectionFailed)
         # XXX dropped deferred
 
