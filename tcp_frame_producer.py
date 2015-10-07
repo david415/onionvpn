@@ -7,13 +7,13 @@ from twisted.internet import interfaces
 from twisted.protocols.basic import Int16StringReceiver
 from twisted.internet.protocol import Protocol, Factory
 from twisted.python import log
-from scapy.all import IP
+from scapy.all import IPv6, hexdump
 
 
 class PersistentSingletonFactory(Factory):
     def __init__(self, protocol):
         print "PersistentSingletonFactory __init__"
-        self.protocol = Protocol()
+        self.protocol = protocol
 
     def buildProtocol(self, addr):
         print "PersistentSingletonFactory buildProtocol addr %s" % (addr,)
@@ -53,9 +53,10 @@ class TcpFrameProducer(Int16StringReceiver, object):
         print "stringReceived"
         # assert that it's an IPv6 packet
         try:
-            packet = IP(data)
-            assert packet.version == 6
+            print "valid IPv6 packet"
+            packet = IPv6(data)
         except struct.error:
+            print "not an IPv6 packet"
             log.msg("not an IPv6 packet")
 
         # assert that the destination IPv6 address matches our address
@@ -63,6 +64,7 @@ class TcpFrameProducer(Int16StringReceiver, object):
             log.msg("packet destination doesn't match our vpn destination")
 
         # write the IPv6 packet to our consumer
+        print "writing to consumer now"
         self.consumer.write(data)
 
     def logPrefix(self):
