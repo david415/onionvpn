@@ -16,26 +16,65 @@ class PacketDeque(object):
     """
     PacketDeque handles packet queuing for a packet transport system.
     """
-    def __init__(self, maxlen, clock, handle_packet):
+    def __init__(self, maxlen, clock, handle_packet, forget_peer):
         self.maxlen = maxlen
         self.clock = clock
         self.handle_packet = handle_packet
+        self.forget_peer = forget_peer
 
         self.turn_delay = 0
         self.deque = deque(maxlen=self.maxlen)
         self.is_ready = False
         self.stopped = False
         self.lazy_tail = defer.succeed(None)
+        self.forget_peer_timer = None
+        self.clear_deque_timer = None
+        # XXX
+        self.forget_duration = 300
+        self.clear_deque_duration = 10
 
     def ready(self):
         self.is_ready = True
+        self.stopped = False
         self.turn_deque()
 
-    def stop(self):
-        self.stopped = True
+    def pause(self):
         self.is_ready = False
+        self.stopped = True
+
+    def stop(self):
+        self.stop_all_timers()
+        self.pause()
+        self.deque.clear()
+
+    def call_forget_peer(self):
+        if len(self.deque) == 0:
+            self.transport.loseConnection()
+            self.stop_all_timers()
+            self.pause()
+            self.deque.clear()
+            self.forget_peer()
+
+    def stop_all_timers(self):
+        if self.forget_peer_timer.active():
+            self.forget_peer_timer.cancel()
+        if self.clear_deque_timer.active():
+            self.clear_deque_timer.cancel()
 
     def append(self, packet):
+        if self.forget_peer_timer is None:
+            self.forget_peer_timer = self.clock.callLater(self.forget_duration, self.call_forget_peer)
+        else:
+            assert self.forget_peer_timer.active()
+
+        if self.clear_deque_timer is None:
+            self.clear_deque_timer = self.clock.callLater(self.clear_deque_duration, self.deque.clear)
+        else:
+            if self.clear_deque_timer.active():
+                self.clear_deque_timer.reset(self.clear_deque_duration)
+            else:
+                self.clear_deque_timer = self.clock.callLater(self.clear_deque_duration, self.deque.clear)
+
         self.deque.append(packet)
         if self.is_ready:
             self.clock.callLater(0, self.turn_deque)
@@ -88,10 +127,6 @@ class IPv6OnionConsumer(object):
         framed_packet = struct.pack('!H', packet_len) + packet
         protocol.transport.write(framed_packet)
 
-    def onionConnectionFailed(self, failure):
-        log.msg('onion connection failed')
-        print(type(failure.value), failure)
-
     def getOnionConnection(self, onion):
         """ getOnionConnection returns a deferred which fires
         with a client connection to an onion address.
@@ -107,15 +142,26 @@ class IPv6OnionConsumer(object):
             print(tor_endpoint)
             protocol = Protocol()
             protocol.onion = onion
+            def handleLostConnection(reason):
+                self.tearDownOnionDeque(onion)
+            protocol.connectionLost = handleLostConnection
             d = connectProtocol(tor_endpoint, protocol)
             def onionReconnect():
-                d = connectProtocol(tor_endpoint, protocol)
-                d.addErrback(handleConnectFail)
+                if onion in self.onion_packet_queue_map:
+                    d = connectProtocol(tor_endpoint, protocol)
+                else:
+                    return defer.succeed(None)
                 return d
-            def handleConnectFail(failure):
-                return onionReconnect()
-            d.addErrback(handleConnectFail)
+            d.addErrback(lambda reason: onionReconnect())
             return d
+
+    def tearDownOnionDeque(self, onion):
+        print "--- <> <<>> tearDownOnionDeque"
+        if onion in self.onion_packet_queue_map:
+            self.onion_packet_queue_map[onion].stop()
+        del self.onion_packet_queue_map[onion]
+        del self.onion_connected_map[onion]
+        del self.onion_protocol_map[onion]
 
     # IConsumer section
     def write(self, packet):
@@ -128,8 +174,11 @@ class IPv6OnionConsumer(object):
         onion = convert_ipv6_to_onion(ip_packet.dst)
         print("Onion connection: {} -> {}".format(ip_packet.dst, onion))
 
+        def reject_peer(onion):
+            self.tearDownOnionDeque(onion)
+
         if onion not in self.onion_packet_queue_map:
-            self.onion_packet_queue_map[onion] = PacketDeque(self.deque_max_len, self.reactor, lambda packet: self.write_to_onion(onion, packet))
+            self.onion_packet_queue_map[onion] = PacketDeque(self.deque_max_len, self.reactor, lambda packet: self.write_to_onion(onion, packet), lambda: reject_peer(onion))
             self.onion_connected_map[onion] = self.getOnionConnection(onion)
 
             def connection_ready(onion, protocol):
