@@ -2,8 +2,9 @@ from scapy.all import IPv6
 from zope.interface import implementer
 import struct
 from collections import deque
+from txsocksx import errors
 
-from twisted.internet import interfaces, task
+from twisted.internet import interfaces, task, error
 from twisted.internet.endpoints import clientFromString, connectProtocol
 from twisted.internet import defer
 from twisted.python import log
@@ -17,6 +18,7 @@ class PacketDeque(object):
     PacketDeque handles packet queuing for a packet transport system.
     """
     def __init__(self, maxlen, clock, handle_packet, forget_peer):
+        print "CREATE NEW PACKET DEQUE"
         self.maxlen = maxlen
         self.clock = clock
         self.handle_packet = handle_packet
@@ -34,22 +36,19 @@ class PacketDeque(object):
         self.clear_deque_duration = 10
 
     def ready(self):
+        print "ready"
         self.is_ready = True
         self.stopped = False
         self.turn_deque()
 
     def pause(self):
+        print "pause"
         self.is_ready = False
         self.stopped = True
 
-    def stop(self):
-        self.stop_all_timers()
-        self.pause()
-        self.deque.clear()
-
     def call_forget_peer(self):
+        print "call_forget_peer"
         if len(self.deque) == 0:
-            self.transport.loseConnection()
             self.stop_all_timers()
             self.pause()
             self.deque.clear()
@@ -65,7 +64,7 @@ class PacketDeque(object):
         if self.forget_peer_timer is None:
             self.forget_peer_timer = self.clock.callLater(self.forget_duration, self.call_forget_peer)
         else:
-            assert self.forget_peer_timer.active()
+            self.forget_peer_timer.reset(self.forget_duration)
 
         if self.clear_deque_timer is None:
             self.clear_deque_timer = self.clock.callLater(self.clear_deque_duration, self.deque.clear)
@@ -79,20 +78,21 @@ class PacketDeque(object):
         if self.is_ready:
             self.clock.callLater(0, self.turn_deque)
 
-    def when_queue_is_empty(self):
-        return defer.succeed(None)
-
     def turn_deque(self):
+        print "turn_deque"
         if self.stopped:
+            print "turn_deque stopped"
             return
         try:
             packet = self.deque.pop()
         except IndexError:
-            self.lazy_tail.addCallback(lambda ign: self.when_queue_is_empty())
+            self.lazy_tail.addCallback(lambda ign: defer.succeed(None))
+            print "index error stopping lazytail"
         else:
             self.lazy_tail.addCallback(lambda ign: self.handle_packet(packet))
             self.lazy_tail.addErrback(log.err)
             self.lazy_tail.addCallback(lambda ign: task.deferLater(self.clock, self.turn_delay, self.turn_deque))
+            print "pushed handling of packet onto lazytail"
 
 
 @implementer(interfaces.IConsumer)
@@ -111,7 +111,7 @@ class IPv6OnionConsumer(object):
         super(IPv6OnionConsumer, self).__init__()
         print "IPv6OnionConsumer init"
         self.reactor = reactor
-        self.deque_max_len = 100
+        self.deque_max_len = 1000
         self.producer = None
         self.pool = {} # XXX
         self.onion_packet_queue_map = {}
@@ -127,64 +127,64 @@ class IPv6OnionConsumer(object):
         framed_packet = struct.pack('!H', packet_len) + packet
         protocol.transport.write(framed_packet)
 
-    def getOnionConnection(self, onion):
-        """ getOnionConnection returns a deferred which fires
-        with a client connection to an onion address.
-        """
-        if onion in self.onion_connected_map:
-            log.msg("Found onion connection in pool to %s.onion" % onion)
-            return defer.succeed(self.onion_connected_map[onion])
-        else:
-            log.msg("Did not find connection to %s.onion in pool" % onion)
-            tor_endpoint = clientFromString(
-                self.reactor, "tor:%s.onion:80" % onion)
+    def try_onion_connect(self, onion):
+        print "try_onion_connection %s" % (onion,)
+        protocol = Protocol()
+        protocol.onion = onion
+        def handleLostConnection(failure):
+            print "handleLostConnection %s" % (failure,)
+            failure.trap(error.ConnectionClosed)
+            print "after handleLostConnection trap"
+            self.forget_peer(onion)
+        protocol.connectionLost = handleLostConnection
+        tor_endpoint = clientFromString(
+            self.reactor, "tor:%s.onion:80" % onion)
+        d = connectProtocol(tor_endpoint, protocol)
+        d.addErrback(self.retry_onion_connect, onion)
+        return d
 
-            print(tor_endpoint)
-            protocol = Protocol()
-            protocol.onion = onion
-            def handleLostConnection(reason):
-                self.tearDownOnionDeque(onion)
-            protocol.connectionLost = handleLostConnection
-            d = connectProtocol(tor_endpoint, protocol)
-            def onionReconnect():
-                if onion in self.onion_packet_queue_map:
-                    d = connectProtocol(tor_endpoint, protocol)
-                else:
-                    return defer.succeed(None)
-                return d
-            d.addErrback(lambda reason: onionReconnect())
-            return d
+    def retry_onion_connect(self, failure, onion):
+        print "retry_onion_connect onion %s failure %s" % (onion, failure)
+        if not isinstance(failure, errors.SOCKSError) or not isinstance(error.ConnectError):
+            return failure
 
-    def tearDownOnionDeque(self, onion):
-        print "--- <> <<>> tearDownOnionDeque"
+        print "after retry_onion_connect trap"
+        # XXX todo: conditional failure to prevent retry goes here
+        d = self.try_onion_connect(onion)
+        d.addErrback(self.retry_onion_connect)
+        return d
+
+    def forget_peer(self, onion):
+        print "--- <> <<>> tearDownOnionDeque with onion %s" % (onion,)
+        protocol = None
         if onion in self.onion_packet_queue_map:
-            self.onion_packet_queue_map[onion].stop()
-        del self.onion_packet_queue_map[onion]
-        del self.onion_connected_map[onion]
-        del self.onion_protocol_map[onion]
+            del self.onion_packet_queue_map[onion]
+        if onion in self.onion_connected_map:
+            self.onion_connected_map[onion].cancel()
+            del self.onion_connected_map[onion]
+        if onion in self.onion_protocol_map:
+            protocol = self.onion_protocol_map[onion]
+            del self.onion_protocol_map[onion]
+        if protocol is not None:
+            protocol.transport.loseConnection()
 
     # IConsumer section
     def write(self, packet):
-        log.msg("IPv6OnionConsumer.write() called")
+        log.msg("self %s IPv6OnionConsumer.write() called" % (self,))
         try:
             ip_packet = IPv6(packet)
         except struct.error:
             log.msg("not an IPv6 packet")
             return
         onion = convert_ipv6_to_onion(ip_packet.dst)
-        print("Onion connection: {} -> {}".format(ip_packet.dst, onion))
-
-        def reject_peer(onion):
-            self.tearDownOnionDeque(onion)
-
+        print("write to onion: {} -> {}".format(ip_packet.dst, onion))
         if onion not in self.onion_packet_queue_map:
-            self.onion_packet_queue_map[onion] = PacketDeque(self.deque_max_len, self.reactor, lambda packet: self.write_to_onion(onion, packet), lambda: reject_peer(onion))
-            self.onion_connected_map[onion] = self.getOnionConnection(onion)
-
+            print "onion not found in self.onion_packet_queue_map"
+            self.onion_packet_queue_map[onion] = PacketDeque(self.deque_max_len, self.reactor, lambda new_packet: self.write_to_onion(onion, new_packet), lambda: self.forget_peer(onion))
+            self.onion_connected_map[onion] = self.try_onion_connect(onion)
             def connection_ready(onion, protocol):
                 self.onion_protocol_map[onion] = protocol
                 self.onion_packet_queue_map[onion].ready()
-
             self.onion_connected_map[onion].addCallback(lambda protocol: connection_ready(onion, protocol))
         self.onion_packet_queue_map[onion].append(packet)
 
