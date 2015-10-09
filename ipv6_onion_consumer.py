@@ -3,10 +3,14 @@ from zope.interface import implementer
 import struct
 from collections import deque
 from txsocksx import errors
+import exceptions
 
 from twisted.internet import interfaces, task, error
 from twisted.internet.endpoints import clientFromString, connectProtocol
 from twisted.internet import defer
+from twisted.internet.defer import CancelledError
+from twisted.internet.error import ConnectionRefusedError
+
 from twisted.python import log
 from twisted.internet.protocol import Factory, Protocol
 
@@ -112,10 +116,11 @@ class IPv6OnionConsumer(object):
         print "IPv6OnionConsumer init"
         self.reactor = reactor
         self.deque_max_len = 40
+        self.retry_delay = 1
         self.producer = None
         self.pool = {} # XXX
+        self.onion_pending_map = {}
         self.onion_packet_queue_map = {}
-        self.onion_connected_map = {}
         self.onion_protocol_map = {}
 
     def logPrefix(self):
@@ -127,41 +132,53 @@ class IPv6OnionConsumer(object):
         framed_packet = struct.pack('!H', packet_len) + packet
         protocol.transport.write(framed_packet)
 
-    def try_onion_connect(self, onion):
-        print "try_onion_connection %s" % (onion,)
+    def handleLostConnection(self, failure, onion):
+        print "handleLostConnection %s" % (failure,)
+        failure.trap(error.ConnectionClosed)
+        print "after handleLostConnection trap"
+        self.forget_peer(onion)
+        self.retry(onion)
+
+    def connection_ready(self, onion, protocol):
+        print "CONNECTION READY"
+        del self.onion_pending_map[onion]
+        self.onion_protocol_map[onion] = protocol
+        self.onion_packet_queue_map[onion].ready()
+
+    def connectFail(self, failure, onion):
+        print "connectFail %r" % (failure,)
+        if isinstance(failure, CancelledError):
+            print "CancelledError caught..."
+            return None
+        print "calling retry..."
+        self.retry(onion)
+
+    def reconnector(self, onion):
+        print "reconnector %r" % (onion,)
         protocol = Protocol()
         protocol.onion = onion
-        def handleLostConnection(failure):
-            print "handleLostConnection %s" % (failure,)
-            failure.trap(error.ConnectionClosed)
-            print "after handleLostConnection trap"
-            self.forget_peer(onion)
-        protocol.connectionLost = handleLostConnection
-        tor_endpoint = clientFromString(
-            self.reactor, "tor:%s.onion:80" % onion)
-        d = connectProtocol(tor_endpoint, protocol)
-        d.addErrback(lambda failure: self.retry_onion_connect(failure, onion))
-        return d
+        protocol.connectionLost = lambda failure: self.handleLostConnection(failure, onion)
+        tor_endpoint = clientFromString(self.reactor, "tor:%s.onion:80" % onion)
+        self.onion_pending_map[onion] = connectProtocol(tor_endpoint, protocol)
+        self.onion_pending_map[onion].addCallback(lambda protocol: self.connection_ready(onion, protocol))
+        self.onion_pending_map[onion].addErrback(lambda failure: self.connectFail(failure, onion))
 
-    def retry_onion_connect(self, failure, onion):
-        print "retry_onion_connect onion %s failure %s" % (onion, failure)
-        if not isinstance(failure, errors.SOCKSError) or not isinstance(error.ConnectError):
-            return failure
+    def retry(self, onion):
+        print "retry"
+        self._delayedRetry = self.reactor.callLater(self.retry_delay, self.reconnector, onion)
 
-        print "after retry_onion_connect trap"
-        # XXX todo: conditional failure to prevent retry goes here
-        d = self.try_onion_connect(onion)
-        d.addErrback(lambda new_failure: self.retry_onion_connect(new_failure, onion))
-        return d
+    def try_onion_connect(self, onion):
+        print "try_onion_connection %s" % (onion,)
+        self.retry(onion)
 
     def forget_peer(self, onion):
         print "--- <> <<>> tearDownOnionDeque with onion %s" % (onion,)
         protocol = None
         if onion in self.onion_packet_queue_map:
             del self.onion_packet_queue_map[onion]
-        if onion in self.onion_connected_map:
-            self.onion_connected_map[onion].cancel()
-            del self.onion_connected_map[onion]
+        if onion in self.onion_pending_map:
+            self.onion_pending_map[onion].cancel()
+            del self.onion_pending_map[onion]
         if onion in self.onion_protocol_map:
             protocol = self.onion_protocol_map[onion]
             del self.onion_protocol_map[onion]
@@ -181,11 +198,7 @@ class IPv6OnionConsumer(object):
         if onion not in self.onion_packet_queue_map:
             print "onion not found in self.onion_packet_queue_map"
             self.onion_packet_queue_map[onion] = PacketDeque(self.deque_max_len, self.reactor, lambda new_packet: self.write_to_onion(onion, new_packet), lambda: self.forget_peer(onion))
-            self.onion_connected_map[onion] = self.try_onion_connect(onion)
-            def connection_ready(onion, protocol):
-                self.onion_protocol_map[onion] = protocol
-                self.onion_packet_queue_map[onion].ready()
-            self.onion_connected_map[onion].addCallback(lambda protocol: connection_ready(onion, protocol))
+            self.try_onion_connect(onion)
         self.onion_packet_queue_map[onion].append(packet)
 
     def registerProducer(self, producer, streaming):

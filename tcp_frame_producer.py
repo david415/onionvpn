@@ -36,6 +36,8 @@ class PersistentProtocol(Protocol):
         # to deframe the data
         self.target_protocol.dataReceived(data)
 
+    def connectionLost(self, reason):
+        print "connectionLost %r" % (reason,)
 
 @implementer(interfaces.IPushProducer)
 class TcpFrameProducer(Int16StringReceiver, object):
