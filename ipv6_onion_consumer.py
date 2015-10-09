@@ -116,26 +116,26 @@ class IPv6OnionConsumer(object):
         print "IPv6OnionConsumer init"
         self.reactor = reactor
         self.deque_max_len = 40
-        self.retry_delay = 1
+        self.retry_delay = 2
+        self.retry_max = 3
         self.producer = None
         self.pool = {} # XXX
         self.onion_pending_map = {}
         self.onion_packet_queue_map = {}
         self.onion_protocol_map = {}
+        self.onion_retry_count = {}
 
     def logPrefix(self):
         return 'IPv6OnionConsumer'
 
     def write_to_onion(self, onion, packet):
         protocol = self.onion_protocol_map[onion]
-        packet_len = len(packet)
-        framed_packet = struct.pack('!H', packet_len) + packet
-        protocol.transport.write(framed_packet)
+        protocol.transport.write(packet)
 
     def handleLostConnection(self, failure, onion):
-        print "handleLostConnection %s" % (failure,)
+        print "handleLostConnection onion %s failure %s" % (onion, failure)
         failure.trap(error.ConnectionClosed)
-        print "after handleLostConnection trap"
+        print "after trap error.ConnectionClosed"
         self.forget_peer(onion)
         self.retry(onion)
 
@@ -148,32 +148,36 @@ class IPv6OnionConsumer(object):
     def connectFail(self, failure, onion):
         print "connectFail %r" % (failure,)
         if isinstance(failure, CancelledError):
-            print "CancelledError caught..."
             return None
-        print "calling retry..."
-        self.retry(onion)
+        if self.onion_retry_count[onion] < self.retry_max:
+            self.onion_retry_count[onion] = self.onion_retry_count[onion] + 1
+            self.retry(onion)
+        else:
+            self.forget_peer(onion)
 
     def reconnector(self, onion):
         print "reconnector %r" % (onion,)
         protocol = Protocol()
         protocol.onion = onion
         protocol.connectionLost = lambda failure: self.handleLostConnection(failure, onion)
-        tor_endpoint = clientFromString(self.reactor, "tor:%s.onion:80" % onion)
+        tor_endpoint = clientFromString(self.reactor, "tor:%s.onion:8060" % onion)
         self.onion_pending_map[onion] = connectProtocol(tor_endpoint, protocol)
         self.onion_pending_map[onion].addCallback(lambda protocol: self.connection_ready(onion, protocol))
         self.onion_pending_map[onion].addErrback(lambda failure: self.connectFail(failure, onion))
 
     def retry(self, onion):
-        print "retry"
         self._delayedRetry = self.reactor.callLater(self.retry_delay, self.reconnector, onion)
 
     def try_onion_connect(self, onion):
         print "try_onion_connection %s" % (onion,)
+        self.onion_retry_count[onion] = 1
         self.retry(onion)
 
     def forget_peer(self, onion):
         print "--- <> <<>> tearDownOnionDeque with onion %s" % (onion,)
         protocol = None
+        if onion in self.onion_retry_count:
+            del self.onion_retry_count[onion]
         if onion in self.onion_packet_queue_map:
             del self.onion_packet_queue_map[onion]
         if onion in self.onion_pending_map:
@@ -196,7 +200,6 @@ class IPv6OnionConsumer(object):
         onion = convert_ipv6_to_onion(ip_packet.dst)
         print("write to onion: {} -> {}".format(ip_packet.dst, onion))
         if onion not in self.onion_packet_queue_map:
-            print "onion not found in self.onion_packet_queue_map"
             self.onion_packet_queue_map[onion] = PacketDeque(self.deque_max_len, self.reactor, lambda new_packet: self.write_to_onion(onion, new_packet), lambda: self.forget_peer(onion))
             self.try_onion_connect(onion)
         self.onion_packet_queue_map[onion].append(packet)
