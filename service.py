@@ -29,9 +29,10 @@ class OnionVPNService(service.Service):
         ipv6_onion_consumer = IPv6OnionConsumer(reactor)
         tun_protocol.setConsumer(ipv6_onion_consumer)
 
+        # listen to onion virtport 8060 for onioncat compatibility
         onion_endpoint = serverFromString(
             reactor,
-            "onion:80:hiddenServiceDir=%s" % self.onion_key_dir
+            "onion:8060:hiddenServiceDir=%s" % self.onion_key_dir
         )
 
         d = onion_endpoint.listen(persistentFactory)
