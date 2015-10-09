@@ -1,5 +1,14 @@
+
 onionvpn
 ========
+
+onionvpn utilizes a tun device to create a virtual-public-network... which
+transports ipv6; using tor onion services as the transport. onionvpn does not
+provide a cryptographic transport like most VPNs (virtual-private-networks).
+
+onionvpn is now compatible with onioncat! i was able to verify this on my own system
+but i did not find any onioncat ipv6 addresses in the wild that would respond to pings.
+
 
 Network Configuration
 ---------------------
@@ -23,9 +32,9 @@ IPv6 address with our onioncat/onionvpn 6byte prefix like so:
 This will be our <ONION-AS-IPv6-ADDR> variable.
 Create the tun device:
 
-    # ip tuntap add dev tun0 mode tun user <USER> group <GROUP>
-    # ip address add scope global <ONION-AS-IPv6-ADDR> peer fd87:d87e:eb43::/48 dev tun0
-    # ifconfig tun0 up
+    ip tuntap add dev tun0 mode tun user <USER> group <GROUP>
+    ip address add scope global <ONION-AS-IPv6-ADDR> peer fd87:d87e:eb43::/48 dev tun0
+    ifconfig tun0 up
 
 
 Then add a static route for our subnet:
@@ -43,9 +52,12 @@ Next you must set your tun device name and onion address in the
 Dependencies
 ------------
 
-    # git clone https://github.com/david415/onionvpn.git && cd onionvpn
-    # pip install -r requirements.txt
+    pip install txtorcon scapy
+
+    git clone https://github.com/david415/onionvpn.git && cd onionvpn
+
 
 Running
+-------
 
-    # twistd -ny onionvpn.tac
+    twistd -ny onionvpn.tac
