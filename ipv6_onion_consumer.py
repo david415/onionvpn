@@ -140,7 +140,7 @@ class IPv6OnionConsumer(object):
         tor_endpoint = clientFromString(
             self.reactor, "tor:%s.onion:80" % onion)
         d = connectProtocol(tor_endpoint, protocol)
-        d.addErrback(self.retry_onion_connect, onion)
+        d.addErrback(lambda failure: self.retry_onion_connect(failure, onion))
         return d
 
     def retry_onion_connect(self, failure, onion):
@@ -151,7 +151,7 @@ class IPv6OnionConsumer(object):
         print "after retry_onion_connect trap"
         # XXX todo: conditional failure to prevent retry goes here
         d = self.try_onion_connect(onion)
-        d.addErrback(self.retry_onion_connect)
+        d.addErrback(lambda new_failure: self.retry_onion_connect(new_failure, onion))
         return d
 
     def forget_peer(self, onion):
