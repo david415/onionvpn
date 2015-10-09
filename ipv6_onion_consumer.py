@@ -111,7 +111,7 @@ class IPv6OnionConsumer(object):
         super(IPv6OnionConsumer, self).__init__()
         print "IPv6OnionConsumer init"
         self.reactor = reactor
-        self.deque_max_len = 1000
+        self.deque_max_len = 40
         self.producer = None
         self.pool = {} # XXX
         self.onion_packet_queue_map = {}
