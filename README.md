@@ -10,7 +10,7 @@ onionvpn is now compatible with onioncat! i was able to verify this on my own sy
 but i did not find any onioncat ipv6 addresses in the wild that would respond to pings.
 
 
-Network Configuration
+network configuration
 ---------------------
 
 Here's how i setup my TUN device in linux:
@@ -48,16 +48,35 @@ Next you must set your tun device name and onion address in the
     twistd -ny onionvpn1.tac -l -
 
 
+installing
+----------
 
-Dependencies
-------------
+onionvpn depends on txtorcon and scapy. you can install via pip like this:
 
-    pip install txtorcon scapy
-
-    git clone https://github.com/david415/onionvpn.git && cd onionvpn
+    pip install git+https://github.com/david415/onionvpn.git
 
 
-Running
+running
 -------
 
-    twistd -ny onionvpn.tac
+onionvpn usage:
+
+    (onion-virtenv)user@debian-python2:~$ onionvpn -h
+    WARNING: Failed to execute tcpdump. Check it is installed and in the PATH
+    WARNING: No route found for IPv6 destination :: (no default route?)
+    usage: onionvpn [-h] onion onion_endpoint tun
+
+    onionvpn - onion service tun device adapter
+
+    positional arguments:
+      onion           Local onion address
+      onion_endpoint  Twisted endpoint descriptor string for the onion service
+                      which listens on onion virtport 8060
+      tun             tun device name
+
+    optional arguments:
+      -h, --help      show this help message and exit
+
+
+onion_endpoint must be specified such that it produces an Twisted
+endpoint object capable of listening to the onion service on virtport 8060
