@@ -42,12 +42,6 @@ Then add a static route for our subnet:
     ip route add fd87:d87e:eb43::/48 dev tun0
 
 
-Next you must set your tun device name and onion address in the
-`onionvpn.tac` file and then start the onionvpn like this:
-
-    twistd -ny onionvpn1.tac -l -
-
-
 installing
 ----------
 
