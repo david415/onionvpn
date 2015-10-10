@@ -14,7 +14,6 @@ from scapy.all import IPv6
 class TunProducerConsumer(IPProtocol):
 
     def __init_(self):
-        print "__init__"
         # IConsumer
         self.producer = None
 
@@ -29,7 +28,6 @@ class TunProducerConsumer(IPProtocol):
 
     # IPProtocol
     def datagramReceived(self, datagram, partial=None):
-        print "datagramReceived"
         # XXX should we keep this assertion?
         # TuntapPort expects our function signature to contain a
         # `partial` argument but always sets it's value to zero.
@@ -37,7 +35,6 @@ class TunProducerConsumer(IPProtocol):
         assert partial == 0
         try:
             packet = IPv6(datagram)
-            print("<datagram_summary> {}".format(packet.summary()))
             assert packet.version == 6
         except struct.error:
             log.msg("not an IPv6 packet")
@@ -57,13 +54,11 @@ class TunProducerConsumer(IPProtocol):
     # IConsumer
     def write(self, packet):
         # Write from TUN to the Onion consumer
-        print "-------- <> tun write!"
         self.transport.write(packet)
 
     def registerProducer(self, producer, streaming):
         print "registerProducer"
         assert streaming is True
-
         self.producer = producer
         self.producer.resumeProducing()
 
