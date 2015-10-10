@@ -13,7 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description='onionvpn - onion service tun device adapter')
     parser.add_argument('onion', action="store", help="Local onion address")
     parser.add_argument('onion_endpoint', action="store",
-                        help="Twisted endpoint descriptor string for the onion service")
+                        help="Twisted endpoint descriptor string for the onion service which listens on onion virtport 8060")
     parser.add_argument('tun', action="store", help="tun device name")
     args = parser.parse_args()
 
