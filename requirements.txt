@@ -1,0 +1,2 @@
+scapy==2.3.1
+txtorcon==0.14.0
