@@ -11,7 +11,7 @@ __copyright__ = 'Copyright 2015'
 
 setup(
     name='onionvpn',
-    description='Twisted client endpoint and parser for Tor SOCKS client',
+    description='onion service tun device adapter for virtual public ipv6 network',
     version = __version__,
     long_description = open('README.md', 'r').read(),
     keywords = ['tor', 'onion vpn', 'onion', 'vpn'],
@@ -34,4 +34,5 @@ setup(
     license = __license__,
     install_requires=open('requirements.txt', 'rb').read().split(),
     packages=['onionvpn'],
+    scripts=['bin/onionvpn']
 )

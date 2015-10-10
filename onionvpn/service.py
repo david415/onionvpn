@@ -12,11 +12,10 @@ from convert import convert_onion_to_ipv6
 
 class OnionVPNService(service.Service):
 
-    def __init__(self, tun_name, onion, onion_key_dir):
-        # XXX should accept a tor_control_address argument
+    def __init__(self, tun_name, onion, onion_endpoint):
         self.tun_name = tun_name
         self.onion = onion
-        self.onion_key_dir = onion_key_dir
+        self.onion_endpoint = onion_endpoint
 
     def startService(self):
         local_addr = convert_onion_to_ipv6(self.onion)
@@ -29,21 +28,11 @@ class OnionVPNService(service.Service):
         ipv6_onion_consumer = IPv6OnionConsumer(reactor)
         tun_protocol.setConsumer(ipv6_onion_consumer)
 
-        # listen to onion virtport 8060 for onioncat compatibility
-        onion_endpoint = serverFromString(
-            reactor,
-            "onion:8060:hiddenServiceDir=%s" % self.onion_key_dir
-        )
-
+        # must listen to onion virtport 8060
+        onion_endpoint = serverFromString(reactor,self.onion_endpoint)
         d = onion_endpoint.listen(persistentFactory)
-
-        def display(result):
-            print result
-        d.addCallback(display)
-
         tun = TuntapPort(self.tun_name, tun_protocol, reactor=reactor)
         tun.startListening()
-
         return d
 
     def stopService(self):

@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+
+import argparse
+from twisted.application import service
+from twisted.internet import reactor
+from twisted.application.app import startApplication
+
+from onionvpn.service import OnionVPNService
+
+
+def main():
+
+    parser = argparse.ArgumentParser(description='onionvpn - onion service tun device adapter')
+    parser.add_argument('onion', action="store", help="Local onion address")
+    parser.add_argument('onion_endpoint', action="store",
+                        help="Twisted endpoint descriptor string for the onion service")
+    parser.add_argument('tun', action="store", help="tun device name")
+    args = parser.parse_args()
+
+    application = service.Application("onionvpn")
+    onionVPNService = OnionVPNService(args.tun, args.onion, args.onion_endpoint)
+    onionVPNService.setServiceParent(application)
+    startApplication(application, 0)
+    reactor.run()
+
+if __name__ == '__main__':
+   main()
