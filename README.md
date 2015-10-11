@@ -13,9 +13,18 @@ but i did not find any onioncat ipv6 addresses in the wild that would respond to
 network configuration
 ---------------------
 
-Here's how i setup my TUN device in linux:
+Here's how i setup my tun device in linux:
 
-Firstly... I use my tor process to generate onion service key material.
+Firstly... make sure the ipv6 INPUT policy is not set to DROP:
+
+    ip6tables -L
+
+Setup the correct policy:
+
+    ip6tables -P INPUT ACCEPT
+
+
+I use my tor process to generate onion service key material.
 Then I retrieve that onion address and use python to convert it to an
 IPv6 address with our onioncat/onionvpn 6byte prefix like so:
 
@@ -94,8 +103,17 @@ This above configuration will work... but you can also use txtorcon's onion serv
 That above endpoint results in the txtorcon endpoint launching a new tor instance;
 you can instead specify a tor control port:
 
-    onionvpn 22u7o5ej47o5z7jf onion:8060:controlPort=/var/run/tor/control:hiddenServiceDir=/home/human/onion_key tun0
+    onionvpn 22u7o5ej47o5z7jf onion:8060:controlPort=/var/run/tor/control:hiddenServiceDir=/home/human/onionvpn tun0
 
 
-The above onion: endpoint string will work under debian based linux distros if the user belongs
-to the debian-tor group.
+The above onion: endpoint string will work under debian based linux distros if the user belongs to the debian-tor group. Add your user to the debian-tor group like this:
+
+    usermod -a -G debian-tor <USER>
+
+Then as the <USER> join the debian-tor group before running onionvpn:
+
+    newgrp debian-tor
+
+With debian's default tor setup... this should allow you to read the tor
+control unix domain socket file in /var/run/tor/control
+
