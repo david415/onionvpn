@@ -30,7 +30,10 @@ Linux shell code for configuring your tun device:
 
     onionvpn -displayconfig 22u7o5ej47o5z7jf
 
-    ip tuntap add dev tun0 mode tun user human group human
+    # your onion converted to ipv6 address is:
+    # fd87:d87e:eb43:d6a9:f774:89e7:dddc:fd25
+
+    ip tuntap add dev tun0 mode tun user user group user
     ip address add scope global fd87:d87e:eb43:d6a9:f774:89e7:dddc:fd25 peer fd87:d87e:eb43::/48 dev tun0
     ifconfig tun0 up
 
@@ -48,26 +51,28 @@ running
 
 onionvpn usage:
 
-    (onion-virtenv)user@debian-python2:~$ onionvpn -h
+    (onion-virtenv)human@debian-python2:~$ onionvpn -h
     WARNING: Failed to execute tcpdump. Check it is installed and in the PATH
-    WARNING: No route found for IPv6 destination :: (no default route?)
-    usage: onionvpn [-h] onion onion_endpoint tun
-
+    usage: onionvpn [-h] [-onion ONION] [-onion_endpoint ONION_ENDPOINT]
+                    [-tun TUN] [-displayconfig ONION-ADDRESS]
+    
     onionvpn - onion service tun device adapter
-
-    positional arguments:
-      onion           Local onion address
-      onion_endpoint  Twisted endpoint descriptor string for the onion service
-                      which listens on onion virtport 8060
-      tun             tun device name
-
+    
     optional arguments:
-      -h, --help      show this help message and exit
+      -h, --help            show this help message and exit
+      -onion ONION          Local onion address
+      -onion_endpoint ONION_ENDPOINT
+                            Twisted endpoint descriptor string for the onion
+                            service which listens on onion virtport 8060
+      -tun TUN              tun device name
+      -displayconfig ONION-ADDRESS
+                            Given an onion address,display ipv6 network
+                            configuration for Linux
 
 
 For example, run it like this:
 
-    onionvpn 22u7o5ej47o5z7jf tcp:interface=127.0.0.1:8060 tun0
+    onionvpn -onion 22u7o5ej47o5z7jf -onion_endpoint tcp:interface=127.0.0.1:8060 -tun tun0
 
 
 onion_endpoint must be specified such that it produces a Twisted
@@ -81,13 +86,13 @@ configuration, like this:
 
 This above configuration will work... but you can also use txtorcon's onion service endpoint:
 
-    onionvpn 22u7o5ej47o5z7jf onion:8060:hiddenServiceDir=/home/human/onion_key tun0
+    onionvpn -onion 22u7o5ej47o5z7jf -onion_endpoint onion:8060:hiddenServiceDir=/home/human/onionvpn -tun tun0
 
 
 That above endpoint results in the txtorcon endpoint launching a new tor instance;
 you can instead specify a tor control port:
 
-    onionvpn 22u7o5ej47o5z7jf onion:8060:controlPort=/var/run/tor/control:hiddenServiceDir=/home/human/onionvpn tun0
+    onionvpn -onion 22u7o5ej47o5z7jf -onion_endpoint onion:8060:hiddenServiceDir=/home/human/onionvpn:controlPort=/var/run/tor/control -tun tun0
 
 
 The above onion: endpoint string will work under debian based linux distros if the user belongs to the debian-tor group. Add your user to the debian-tor group like this:
@@ -100,4 +105,3 @@ Then as the <USER> join the debian-tor group before running onionvpn:
 
 With debian's default tor setup... this should allow you to read the tor
 control unix domain socket file in /var/run/tor/control
-

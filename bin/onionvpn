@@ -4,6 +4,8 @@ import argparse
 from twisted.application import service
 from twisted.internet import reactor
 from twisted.application.app import startApplication
+import logging
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
 from onionvpn.service import OnionVPNService
 from onionvpn.configure_tun import generate_tun_linux_shell_code
@@ -21,10 +23,8 @@ def main():
     args = parser.parse_args()
 
     if args.displayconfig:
-        print generate_tun_linux_shell_code(args.displayconfig)
+        generate_tun_linux_shell_code(args.displayconfig)
         return
-    else:
-        print "not display"
 
     application = service.Application("onionvpn")
     onionVPNService = OnionVPNService(args.tun, args.onion, args.onion_endpoint)

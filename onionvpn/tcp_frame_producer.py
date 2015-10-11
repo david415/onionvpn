@@ -1,13 +1,14 @@
 # import stuct
-import struct
 
 from zope.interface import implementer
 from twisted.internet import interfaces
 from twisted.protocols.basic import Int16StringReceiver
 from twisted.internet.protocol import Protocol, Factory
 from twisted.python import log
+
 from scapy.all import IPv6
 from struct import unpack
+import struct
 
 
 class PersistentSingletonFactory(Factory):

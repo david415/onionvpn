@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-import struct
-
-from zope.interface import implementer
 
 from twisted.internet import interfaces
 from twisted.pair.ip import IPProtocol
 from twisted.python import log
 
+from zope.interface import implementer
+import struct
 from scapy.all import IPv6
 
 

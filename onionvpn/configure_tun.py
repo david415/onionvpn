@@ -21,5 +21,5 @@ ip address add scope global %s peer fd87:d87e:eb43::/48 dev %s
 ifconfig %s up
     """ % (tun_device, user, group, ipv6_address, tun_device, tun_device)
     print "# your onion converted to ipv6 address is:"
-    print "# %s" % (onion,)
-    print shell_codes
+    print "# %s" % (ipv6_address,)
+    print "%s" % (shell_codes,)
