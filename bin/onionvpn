@@ -20,7 +20,7 @@ def main():
     application = service.Application("onionvpn")
     onionVPNService = OnionVPNService(args.tun, args.onion, args.onion_endpoint)
     onionVPNService.setServiceParent(application)
-    startApplication(application, 0)
+    startApplication(application, False)
     reactor.run()
 
 if __name__ == '__main__':
