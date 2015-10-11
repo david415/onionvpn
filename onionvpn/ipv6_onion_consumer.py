@@ -106,7 +106,7 @@ class IPv6OnionConsumer(object):
     def __init__(self, reactor):
         super(IPv6OnionConsumer, self).__init__()
         self.reactor = reactor
-        self.deque_max_len = 40
+        self.deque_max_len = 1000
         self.retry_delay = 2
         self.retry_max = 3
         self.producer = None
@@ -120,10 +120,12 @@ class IPv6OnionConsumer(object):
         return 'IPv6OnionConsumer'
 
     def write_to_onion(self, onion, packet):
+        print "write_to_onion"
         protocol = self.onion_protocol_map[onion]
         protocol.transport.write(packet)
 
     def handleLostConnection(self, failure, onion):
+        print "handleLostConnection"
         failure.trap(error.ConnectionClosed)
         self.forget_peer(onion)
         self.retry(onion)
@@ -137,10 +139,13 @@ class IPv6OnionConsumer(object):
     def connectFail(self, failure, onion):
         if isinstance(failure, CancelledError):
             return None
+        print "connectFail"
         if self.onion_retry_count[onion] < self.retry_max:
             self.onion_retry_count[onion] = self.onion_retry_count[onion] + 1
+            print "connect to onion %s retry count to %s" % (onion, self.onion_retry_count[onion])
             self.retry(onion)
         else:
+            print "exceeded max retry.. calling forget onion"
             self.forget_peer(onion)
 
     def reconnector(self, onion):
@@ -160,6 +165,7 @@ class IPv6OnionConsumer(object):
         self.retry(onion)
 
     def forget_peer(self, onion):
+        print "forget_peer onion %s" % (onion,)
         protocol = None
         if onion in self.onion_retry_count:
             del self.onion_retry_count[onion]
@@ -176,6 +182,7 @@ class IPv6OnionConsumer(object):
 
     # IConsumer section
     def write(self, packet):
+        print "IPv6OnionConsumer write"
         try:
             ip_packet = IPv6(packet)
         except struct.error:
