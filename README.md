@@ -72,5 +72,26 @@ onionvpn usage:
       -h, --help      show this help message and exit
 
 
-onion_endpoint must be specified such that it produces an Twisted
-endpoint object capable of listening to the onion service on virtport 8060
+For example, run it like this:
+
+    onionvpn 22u7o5ej47o5z7jf tcp:interface=127.0.0.1:8060 tun0
+
+
+onion_endpoint must be specified such that it produces a Twisted
+endpoint object capable of listening to the onion service on virtport 8060...
+The above TCP server endpoint requires you to run tor with the appropriate onion service
+configuration, like this:
+
+    HiddenServiceDir /var/lib/tor/onionvpn
+    HiddenServicePort 8060 127.0.0.1:8060
+
+
+This above configuration will work... but you can also use txtorcon's onion service endpoint:
+
+    onionvpn 22u7o5ej47o5z7jf onion:8060:hiddenServiceDir=/home/human/onion_key tun0
+
+
+That above endpoint results in the txtorcon endpoint launching a new tor instance;
+you can instead specify a tor control port:
+
+    onionvpn 22u7o5ej47o5z7jf onion:8060:controlPort=9051:hiddenServiceDir=/home/human/onion_key tun0
