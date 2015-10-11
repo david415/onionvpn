@@ -6,16 +6,25 @@ from twisted.internet import reactor
 from twisted.application.app import startApplication
 
 from onionvpn.service import OnionVPNService
-
+from onionvpn.configure_tun import generate_tun_linux_shell_code
 
 def main():
 
     parser = argparse.ArgumentParser(description='onionvpn - onion service tun device adapter')
-    parser.add_argument('onion', action="store", help="Local onion address")
-    parser.add_argument('onion_endpoint', action="store",
-                        help="Twisted endpoint descriptor string for the onion service which listens on onion virtport 8060")
-    parser.add_argument('tun', action="store", help="tun device name")
+    parser.add_argument('-onion', action="store", help="Local onion address")
+    parser.add_argument('-onion_endpoint', action="store",
+                        help="Twisted endpoint descriptor string for the " +
+                        "onion service which listens on onion virtport 8060")
+    parser.add_argument('-tun', action="store", help="tun device name")
+    parser.add_argument('-displayconfig', metavar="ONION-ADDRESS", action="store", help="Given an onion address," +
+                        "display ipv6 network configuration for Linux")
     args = parser.parse_args()
+
+    if args.displayconfig:
+        print generate_tun_linux_shell_code(args.displayconfig)
+        return
+    else:
+        print "not display"
 
     application = service.Application("onionvpn")
     onionVPNService = OnionVPNService(args.tun, args.onion, args.onion_endpoint)
