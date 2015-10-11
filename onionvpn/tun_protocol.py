@@ -28,6 +28,7 @@ class TunProducerConsumer(IPProtocol):
 
     # IPProtocol
     def datagramReceived(self, datagram, partial=None):
+        print "TunProducerConsumer datagramReceived"
         # XXX should we keep this assertion?
         # TuntapPort expects our function signature to contain a
         # `partial` argument but always sets it's value to zero.
@@ -53,6 +54,7 @@ class TunProducerConsumer(IPProtocol):
 
     # IConsumer
     def write(self, packet):
+        print "datagramReceived write"
         # Write from TUN to the Onion consumer
         self.transport.write(packet)
 

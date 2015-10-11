@@ -28,6 +28,7 @@ class PersistentProtocol(Protocol):
         return 'PersistentProtocol'
 
     def dataReceived(self, data):
+        print "PersistentProtocol dataReceived"
         self.target_protocol.dataReceived(data)
 
     def connectionLost(self, reason):
@@ -42,6 +43,7 @@ class TcpFrameProducer(Protocol, object):
         self.consumer = consumer
 
     def dataReceived(self, data):
+        print "TcpFrameProducer dataReceived"
         self.filter_send(data)
 
     def filter_send(self, packet):
