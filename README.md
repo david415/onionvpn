@@ -94,4 +94,8 @@ This above configuration will work... but you can also use txtorcon's onion serv
 That above endpoint results in the txtorcon endpoint launching a new tor instance;
 you can instead specify a tor control port:
 
-    onionvpn 22u7o5ej47o5z7jf onion:8060:controlPort=9051:hiddenServiceDir=/home/human/onion_key tun0
+    onionvpn 22u7o5ej47o5z7jf onion:8060:controlPort=/var/run/tor/control:hiddenServiceDir=/home/human/onion_key tun0
+
+
+The above onion: endpoint string will work under debian based linux distros if the user belongs
+to the debian-tor group.
